@@ -61,6 +61,8 @@ ${renderHero({
   secondaryLabel: "Explore AI Search",
   secondaryHref: "../ai-search.html",
   primaryHref: "../contact.html",
+  showLogoMark: true,
+  logoMarkBase: "../",
 })}
 
 ${renderSectionStack([

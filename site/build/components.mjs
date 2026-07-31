@@ -598,10 +598,15 @@ export function renderBreadcrumbs(trail) {
 // ---------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------
-export function renderHero({ eyebrow, headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact.html", secondaryLabel, secondaryHref, showBuffalo = false, compact = false, hideActions = false }) {
+export function renderHero({ eyebrow, headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact.html", secondaryLabel, secondaryHref, showBuffalo = false, showLogoMark = false, logoMarkBase = "", compact = false, hideActions = false }) {
+  const mark = showBuffalo
+    ? `<img class="hero__buffalo" src="assets/buffalo-hero.png" alt="" aria-hidden="true" loading="eager" fetchpriority="high" width="798" height="884">`
+    : showLogoMark
+    ? `<img class="hero__buffalo hero__buffalo--logo" src="${logoMarkBase}assets/logo-mark.png" alt="" aria-hidden="true" loading="eager" width="640" height="437">`
+    : "";
   return `<section class="hero${compact ? " hero--compact" : ""}">
     <div class="hero__glow" aria-hidden="true"></div>
-    ${showBuffalo ? `<img class="hero__buffalo" src="assets/buffalo-hero.png" alt="" aria-hidden="true" loading="eager" fetchpriority="high" width="798" height="884">` : ""}
+    ${mark}
     <div class="hero__grid" aria-hidden="true"></div>
 
     <div class="container hero__inner">

@@ -61,6 +61,8 @@ ${renderHero({
   secondaryLabel: "Explore National SEO",
   secondaryHref: "../national-seo.html",
   primaryHref: "../contact.html",
+  showLogoMark: true,
+  logoMarkBase: "../",
 })}
 
 ${renderSectionStack([

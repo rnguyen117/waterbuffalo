@@ -417,6 +417,20 @@ h1, h2, h3, h4 {
   50% { transform: translateY(-45%); }
 }
 
+/* Logo mark variant: the flat logo is landscape (wider than tall),
+   unlike the portrait buffalo photo, so it needs a larger width clamp
+   to read with similar visual weight at the same position. */
+.hero__buffalo.hero__buffalo--logo {
+  right: -80px;
+  width: clamp(760px, 66vw, 1080px);
+}
+@media (max-width: 1080px) {
+  .hero__buffalo.hero__buffalo--logo { width: clamp(320px, 44vw, 480px); right: -60px; }
+}
+@media (max-width: 640px) {
+  .hero__buffalo.hero__buffalo--logo { width: clamp(200px, 56vw, 280px); }
+}
+
 /* Tablet: shrink and tuck the artwork closer to the corner rather than
    hiding it — it still bleeds off the edge, just with less overlap. */
 @media (max-width: 1080px) {
@@ -1021,7 +1035,7 @@ h1, h2, h3, h4 {
 <nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container"><a href="../index.html">Home</a><span class="breadcrumbs__sep" aria-hidden="true">/</span><a href="../industries.html">Industries</a><span class="breadcrumbs__sep" aria-hidden="true">/</span><span aria-current="page">Financial Services</span></div></nav>
 <section class="hero">
     <div class="hero__glow" aria-hidden="true"></div>
-    
+    <img class="hero__buffalo hero__buffalo--logo" src="../assets/logo-mark.png" alt="" aria-hidden="true" loading="eager" width="640" height="437">
     <div class="hero__grid" aria-hidden="true"></div>
 
     <div class="container hero__inner">

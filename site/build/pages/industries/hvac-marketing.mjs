@@ -65,6 +65,8 @@ ${renderHero({
   secondaryLabel: "Explore Local SEO",
   secondaryHref: "../local-seo.html",
   primaryHref: "../contact.html",
+  showLogoMark: true,
+  logoMarkBase: "../",
 })}
 
 ${renderSectionStack([
