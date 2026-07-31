@@ -45,7 +45,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Address",
-    list: [
+    tags: [
       "International keyword research",
       "Market opportunity analysis",
       "Country and language targeting",

@@ -2,7 +2,7 @@ import { renderCta, organizationSchema } from "../components.mjs";
 
 export const path = "/404.html";
 export const title = "Page Not Found | Water Buffalo Media";
-export const description = "The page you're looking for can't be found. Return to Water Buffalo Media to explore our search visibility services.";
+export const description = "The page you're looking for can't be found. Return to Water Buffalo Media to explore our Local, National, Global, and AI search services.";
 export const schemas = [organizationSchema()];
 export const noindex = true;
 

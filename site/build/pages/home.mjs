@@ -11,7 +11,7 @@ import {
 export const path = "/";
 export const title = "Water Buffalo Media | SEO, Local Search and AI Visibility";
 export const description =
-  "Build lasting visibility across Google Search, Google Maps, and AI platforms with technical SEO, local search strategy, content architecture, and generative engine optimization.";
+  "Build lasting visibility across Google Search, Google Maps, and AI platforms with technical SEO, local strategy, and generative engine optimization.";
 export const schemas = [organizationSchema()];
 
 export const bodyHtml = `

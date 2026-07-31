@@ -417,8 +417,35 @@ h1, h2, h3, h4 {
   50% { transform: translateY(-45%); }
 }
 
+/* Tablet: shrink and tuck the artwork closer to the corner rather than
+   hiding it — it still bleeds off the edge, just with less overlap. */
 @media (max-width: 1080px) {
-  .hero__buffalo { display: none; }
+  .hero__buffalo {
+    width: clamp(300px, 48vw, 460px);
+    right: -50px;
+    opacity: 0.92;
+  }
+}
+
+/* Mobile: no room for an overlapping graphic without fighting the copy,
+   so it becomes a small centered mark that sits above the headline
+   instead of disappearing. */
+@media (max-width: 640px) {
+  .hero:not(.hero--compact) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+  }
+  .hero__buffalo {
+    position: static;
+    align-self: center;
+    width: clamp(120px, 34vw, 170px);
+    margin: 0 0 4px;
+    opacity: 1;
+    animation: none;
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 40px rgba(46, 107, 255, 0.3));
+  }
 }
 
 .hero__inner { position: relative; z-index: 1; }
@@ -630,6 +657,20 @@ h1, h2, h3, h4 {
 .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.98rem; color: var(--body-text); }
 .checklist .icon { width: 17px; height: 17px; color: var(--accent); flex-shrink: 0; margin-top: 3px; }
 
+.tag-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0; }
+.tag-grid__item {
+  padding: 10px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--body-text);
+  white-space: nowrap;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+.tag-grid__item:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ---------------------------------------------------------------
    Differentiation closing
 --------------------------------------------------------------- */
@@ -645,6 +686,18 @@ h1, h2, h3, h4 {
 /* ---------------------------------------------------------------
    Related links
 --------------------------------------------------------------- */
+.related-links {
+  padding: 44px 0;
+  border-top: 1px solid var(--border);
+}
+.related-links h2 {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .related-links__grid {
   display: flex;
   flex-wrap: wrap;
@@ -813,8 +866,10 @@ h1, h2, h3, h4 {
 
 @media (max-width: 640px) {
   .container { padding: 0 20px; }
-  .hero { padding: 76px 0 56px; }
+  .hero { padding: 32px 0 20px; }
   .hero--compact { padding: 56px 0 48px; }
+  .hero__title { margin-bottom: 14px; }
+  .hero__lead { margin-bottom: 22px; }
   .hero__actions { flex-direction: column; }
   .hero__actions .btn { width: 100%; }
   .section { padding: 64px 0; }
@@ -943,25 +998,25 @@ h1, h2, h3, h4 {
         <div class="container">
           <h2 class="section-title reveal">What We Optimize</h2>
           
-          <ul class="checklist checklist--cols-2">
-    <li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Primary and secondary categories</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Business description</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Services</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Products</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Service areas</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Hours</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Photos</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Attributes</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Questions and answers</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Review strategy</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Review responses</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Google Posts</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Website links</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>UTM tracking</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Duplicate listing issues</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Suspension risk review</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Competitor comparison</span></li>
-  </ul>
+          <div class="tag-grid">
+    <span class="tag-grid__item">Primary and secondary categories</span>
+<span class="tag-grid__item">Business description</span>
+<span class="tag-grid__item">Services</span>
+<span class="tag-grid__item">Products</span>
+<span class="tag-grid__item">Service areas</span>
+<span class="tag-grid__item">Hours</span>
+<span class="tag-grid__item">Photos</span>
+<span class="tag-grid__item">Attributes</span>
+<span class="tag-grid__item">Questions and answers</span>
+<span class="tag-grid__item">Review strategy</span>
+<span class="tag-grid__item">Review responses</span>
+<span class="tag-grid__item">Google Posts</span>
+<span class="tag-grid__item">Website links</span>
+<span class="tag-grid__item">UTM tracking</span>
+<span class="tag-grid__item">Duplicate listing issues</span>
+<span class="tag-grid__item">Suspension risk review</span>
+<span class="tag-grid__item">Competitor comparison</span>
+  </div>
         </div>
       </section>
 <section class="section">

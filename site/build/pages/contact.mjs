@@ -8,9 +8,9 @@ import {
 } from "../components.mjs";
 
 export const path = "/contact.html";
-export const title = "Contact Water Buffalo Media";
+export const title = "Contact Water Buffalo Media | Request a Free Audit";
 export const description =
-  "Contact Water Buffalo Media to request a search visibility audit or discuss Local SEO, Technical SEO, Google Business Profile optimization, and AI search strategy.";
+  "Contact Water Buffalo Media to request a free search visibility audit or discuss Local SEO, Technical SEO, GBP, and AI search strategy.";
 
 const trail = [{ label: "Home", href: "index.html" }, { label: "Contact" }];
 

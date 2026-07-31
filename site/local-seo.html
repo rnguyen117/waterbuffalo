@@ -417,8 +417,35 @@ h1, h2, h3, h4 {
   50% { transform: translateY(-45%); }
 }
 
+/* Tablet: shrink and tuck the artwork closer to the corner rather than
+   hiding it — it still bleeds off the edge, just with less overlap. */
 @media (max-width: 1080px) {
-  .hero__buffalo { display: none; }
+  .hero__buffalo {
+    width: clamp(300px, 48vw, 460px);
+    right: -50px;
+    opacity: 0.92;
+  }
+}
+
+/* Mobile: no room for an overlapping graphic without fighting the copy,
+   so it becomes a small centered mark that sits above the headline
+   instead of disappearing. */
+@media (max-width: 640px) {
+  .hero:not(.hero--compact) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+  }
+  .hero__buffalo {
+    position: static;
+    align-self: center;
+    width: clamp(120px, 34vw, 170px);
+    margin: 0 0 4px;
+    opacity: 1;
+    animation: none;
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 40px rgba(46, 107, 255, 0.3));
+  }
 }
 
 .hero__inner { position: relative; z-index: 1; }
@@ -630,6 +657,20 @@ h1, h2, h3, h4 {
 .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.98rem; color: var(--body-text); }
 .checklist .icon { width: 17px; height: 17px; color: var(--accent); flex-shrink: 0; margin-top: 3px; }
 
+.tag-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0; }
+.tag-grid__item {
+  padding: 10px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--body-text);
+  white-space: nowrap;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+.tag-grid__item:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ---------------------------------------------------------------
    Differentiation closing
 --------------------------------------------------------------- */
@@ -645,6 +686,18 @@ h1, h2, h3, h4 {
 /* ---------------------------------------------------------------
    Related links
 --------------------------------------------------------------- */
+.related-links {
+  padding: 44px 0;
+  border-top: 1px solid var(--border);
+}
+.related-links h2 {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .related-links__grid {
   display: flex;
   flex-wrap: wrap;
@@ -813,8 +866,10 @@ h1, h2, h3, h4 {
 
 @media (max-width: 640px) {
   .container { padding: 0 20px; }
-  .hero { padding: 76px 0 56px; }
+  .hero { padding: 32px 0 20px; }
   .hero--compact { padding: 56px 0 48px; }
+  .hero__title { margin-bottom: 14px; }
+  .hero__lead { margin-bottom: 22px; }
   .hero__actions { flex-direction: column; }
   .hero__actions .btn { width: 100%; }
   .section { padding: 64px 0; }
@@ -828,19 +883,19 @@ h1, h2, h3, h4 {
 }
 </style>
 <title>Local SEO Services | Water Buffalo Media</title>
-<meta name="description" content="Build durable local visibility across Google Search and Google Maps with service-area strategy, location architecture, GBP optimization, citations, reviews, and local authority.">
+<meta name="description" content="Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.">
 
 <link rel="canonical" href="https://waterbuffalomedia.com/local-seo.html">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Water Buffalo Media">
 <meta property="og:title" content="Local SEO Services | Water Buffalo Media">
-<meta property="og:description" content="Build durable local visibility across Google Search and Google Maps with service-area strategy, location architecture, GBP optimization, citations, reviews, and local authority.">
+<meta property="og:description" content="Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.">
 <meta property="og:url" content="https://waterbuffalomedia.com/local-seo.html">
 <meta property="og:image" content="https://waterbuffalomedia.com/assets/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Local SEO Services | Water Buffalo Media">
-<meta name="twitter:description" content="Build durable local visibility across Google Search and Google Maps with service-area strategy, location architecture, GBP optimization, citations, reviews, and local authority.">
+<meta name="twitter:description" content="Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.">
 <meta name="twitter:image" content="https://waterbuffalomedia.com/assets/og-image.png">
 
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -849,7 +904,7 @@ h1, h2, h3, h4 {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Water Buffalo Media","url":"https://waterbuffalomedia.com","logo":"https://waterbuffalomedia.com/assets/favicon.svg","description":"Water Buffalo Media is a search visibility agency that engineers authority across Google Search, Google Maps, and AI-generated search experiences.","sameAs":[]}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","serviceType":"Local SEO","name":"Local SEO","description":"Build durable local visibility across Google Search and Google Maps with service-area strategy, location architecture, GBP optimization, citations, reviews, and local authority.","provider":{"@type":"Organization","name":"Water Buffalo Media","url":"https://waterbuffalomedia.com"},"areaServed":"Worldwide","url":"https://waterbuffalomedia.com/local-seo.html"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","serviceType":"Local SEO","name":"Local SEO","description":"Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.","provider":{"@type":"Organization","name":"Water Buffalo Media","url":"https://waterbuffalomedia.com"},"areaServed":"Worldwide","url":"https://waterbuffalomedia.com/local-seo.html"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://waterbuffalomedia.comindex.html"},{"@type":"ListItem","position":2,"name":"Services","item":"https://waterbuffalomedia.comservices.html"},{"@type":"ListItem","position":3,"name":"Local SEO"}]}</script>
 </head>
 <body>
@@ -943,22 +998,22 @@ h1, h2, h3, h4 {
         <div class="container">
           <h2 class="section-title reveal">What We Strengthen</h2>
           
-          <ul class="checklist checklist--cols-2">
-    <li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Service-area architecture</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>City and location page strategy</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Google Business Profile optimization</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local keyword and intent research</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local landing page optimization</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Citation consistency</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Review strategy</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local schema</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Internal linking</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local content planning</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Competitor mapping</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Multi-location organization</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local authority development</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Conversion tracking</span></li>
-  </ul>
+          <div class="tag-grid">
+    <span class="tag-grid__item">Service-area architecture</span>
+<span class="tag-grid__item">City and location page strategy</span>
+<span class="tag-grid__item">Google Business Profile optimization</span>
+<span class="tag-grid__item">Local keyword and intent research</span>
+<span class="tag-grid__item">Local landing page optimization</span>
+<span class="tag-grid__item">Citation consistency</span>
+<span class="tag-grid__item">Review strategy</span>
+<span class="tag-grid__item">Local schema</span>
+<span class="tag-grid__item">Internal linking</span>
+<span class="tag-grid__item">Local content planning</span>
+<span class="tag-grid__item">Competitor mapping</span>
+<span class="tag-grid__item">Multi-location organization</span>
+<span class="tag-grid__item">Local authority development</span>
+<span class="tag-grid__item">Conversion tracking</span>
+  </div>
         </div>
       </section>
 <section class="section">
@@ -973,18 +1028,18 @@ h1, h2, h3, h4 {
         <div class="container">
           <h2 class="section-title reveal">Built for Businesses That Depend on Local Demand</h2>
           
-          <ul class="checklist checklist--cols-2">
-    <li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Home improvement companies</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Contractors</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Medical practices</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Dental practices</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Law firms</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Automotive businesses</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Restaurants</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Local retailers</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Property services</span></li>
-<li><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><span>Multi-location companies</span></li>
-  </ul>
+          <div class="tag-grid">
+    <span class="tag-grid__item">Home improvement companies</span>
+<span class="tag-grid__item">Contractors</span>
+<span class="tag-grid__item">Medical practices</span>
+<span class="tag-grid__item">Dental practices</span>
+<span class="tag-grid__item">Law firms</span>
+<span class="tag-grid__item">Automotive businesses</span>
+<span class="tag-grid__item">Restaurants</span>
+<span class="tag-grid__item">Local retailers</span>
+<span class="tag-grid__item">Property services</span>
+<span class="tag-grid__item">Multi-location companies</span>
+  </div>
         </div>
       </section>
 

@@ -44,7 +44,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Examine",
-    list: [
+    tags: [
       "Crawlability",
       "Indexing",
       "Site architecture",

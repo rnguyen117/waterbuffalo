@@ -45,7 +45,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Build",
-    list: [
+    tags: [
       "National keyword strategy",
       "Search intent mapping",
       "Content architecture",

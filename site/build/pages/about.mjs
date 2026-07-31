@@ -12,7 +12,7 @@ import {
 export const path = "/about.html";
 export const title = "About Water Buffalo Media | Built for Lasting Visibility";
 export const description =
-  "Learn how Water Buffalo Media combines technical precision, steady strategy, and values inspired by the Vietnamese water buffalo to build durable search visibility.";
+  "Learn how Water Buffalo Media combines technical precision, steady strategy, and enduring values to build lasting search visibility.";
 
 const trail = [{ label: "Home", href: "index.html" }, { label: "About" }];
 

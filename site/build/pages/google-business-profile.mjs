@@ -45,7 +45,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Optimize",
-    list: [
+    tags: [
       "Primary and secondary categories",
       "Business description",
       "Services",

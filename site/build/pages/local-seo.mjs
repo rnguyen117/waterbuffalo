@@ -12,7 +12,7 @@ import {
 export const path = "/local-seo.html";
 export const title = "Local SEO Services | Water Buffalo Media";
 export const description =
-  "Build durable local visibility across Google Search and Google Maps with service-area strategy, location architecture, GBP optimization, citations, reviews, and local authority.";
+  "Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.";
 
 const trail = [
   { label: "Home", href: "index.html" },
@@ -49,7 +49,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Strengthen",
-    list: [
+    tags: [
       "Service-area architecture",
       "City and location page strategy",
       "Google Business Profile optimization",
@@ -75,7 +75,7 @@ ${renderSectionStack([
   },
   {
     headline: "Built for Businesses That Depend on Local Demand",
-    list: [
+    tags: [
       "Home improvement companies",
       "Contractors",
       "Medical practices",
@@ -87,7 +87,6 @@ ${renderSectionStack([
       "Property services",
       "Multi-location companies",
     ],
-    listColumns: 2,
   },
 ])}
 

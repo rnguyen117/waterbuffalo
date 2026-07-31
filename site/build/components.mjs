@@ -500,6 +500,15 @@ export function renderChecklist(items, columns = 2) {
   </ul>`;
 }
 
+// A wrapping pill/tag grid — for long capability or category lists
+// (10-20 items) a stacked checklist reads as a monotonous wall of
+// checkmarks; tags scan faster and don't imply a literal to-do list.
+export function renderTagGrid(items) {
+  return `<div class="tag-grid">
+    ${items.map((it) => `<span class="tag-grid__item">${esc(it)}</span>`).join("\n")}
+  </div>`;
+}
+
 export function renderFeatureGrid(items, { columns = 3, numbered = false } = {}) {
   return `<div class="feature-grid feature-grid--cols-${columns}">
     ${items
@@ -523,6 +532,8 @@ export function renderSectionStack(sections) {
       const alt = i % 2 === 1;
       const listMarkup = sec.list
         ? renderChecklist(sec.list, sec.listColumns || 2)
+        : sec.tags
+        ? renderTagGrid(sec.tags)
         : "";
       const paras = (sec.paragraphs || [])
         .map((p) => `<p class="reveal">${p}</p>`)

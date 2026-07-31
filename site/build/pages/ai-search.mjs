@@ -10,9 +10,9 @@ import {
 } from "../components.mjs";
 
 export const path = "/ai-search.html";
-export const title = "Generative Engine Optimization and AI Search | Water Buffalo Media";
+export const title = "AI Search Optimization (GEO) | Water Buffalo Media";
 export const description =
-  "Improve how AI platforms understand, reference, and recommend your business through entity clarity, structured content, authority signals, and AI search optimization.";
+  "Improve how AI platforms understand and recommend your business through entity clarity, structured content, and authority signals for AI search.";
 
 const trail = [
   { label: "Home", href: "index.html" },
@@ -45,7 +45,7 @@ ${renderSectionStack([
   },
   {
     headline: "What We Strengthen",
-    list: [
+    tags: [
       "Entity clarity",
       "Brand and service relationships",
       "Structured data",
