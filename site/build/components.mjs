@@ -3,6 +3,7 @@
 
 export const SITE_URL = "https://www.waterbuffalomedia.com";
 export const SITE_NAME = "Water Buffalo Media";
+const GA_MEASUREMENT_ID = "G-QH4F7NMBDW";
 
 // page.path always keeps its .html suffix (build.mjs needs that to know
 // which physical file to write), but Cloudflare Pages serves the
@@ -348,6 +349,14 @@ export function renderHead({
   return `<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#060708">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${GA_MEASUREMENT_ID}');
+</script>
 <style>${inlineCss}</style>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
