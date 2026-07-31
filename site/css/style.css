@@ -351,12 +351,17 @@ h1, h2, h3, h4 {
 
 .hero__glow {
   position: absolute;
-  inset: -35% -15% auto -25%;
-  width: 1700px;
-  height: 1300px;
-  background:
-    radial-gradient(circle at 74% 34%, rgba(46, 107, 255, 0.44), transparent 62%),
-    radial-gradient(circle at 20% 68%, rgba(46, 107, 255, 0.18), transparent 58%);
+  inset: 0;
+  background: linear-gradient(
+    96deg,
+    rgba(40, 92, 230, 0.6) 0%,
+    rgba(35, 80, 200, 0.5) 12%,
+    rgba(28, 64, 160, 0.38) 26%,
+    rgba(20, 46, 115, 0.26) 40%,
+    rgba(13, 29, 72, 0.15) 55%,
+    rgba(7, 14, 36, 0.06) 70%,
+    rgba(6, 7, 8, 0) 85%
+  );
   z-index: -2;
   pointer-events: none;
 }
