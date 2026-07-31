@@ -426,6 +426,17 @@ export function renderHero({ eyebrow, headline, body, primaryLabel = CTA_LABEL, 
 }
 
 // ---------------------------------------------------------------
+// Marquee (dark scrolling strip, homepage only — keeps the fold solid
+// black beneath the hero and echoes the surfaces we build visibility on)
+// ---------------------------------------------------------------
+export function renderMarquee(items) {
+  const spans = items.map((it) => `<span>${esc(it)}</span>`).join("");
+  return `<section class="marquee" aria-label="Where we build visibility">
+    <div class="marquee__track">${spans}${spans}</div>
+  </section>`;
+}
+
+// ---------------------------------------------------------------
 // CTA section
 // ---------------------------------------------------------------
 export function renderCta({ headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact.html", secondaryLabel, secondaryHref }) {

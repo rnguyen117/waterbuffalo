@@ -1,5 +1,6 @@
 import {
   renderHero,
+  renderMarquee,
   renderCta,
   renderServiceCard,
   renderFeatureGrid,
@@ -22,6 +23,18 @@ ${renderHero({
   secondaryHref: "services.html",
   showBuffalo: true,
 })}
+
+${renderMarquee([
+  "GOOGLE SEARCH",
+  "GOOGLE MAPS",
+  "AI OVERVIEWS",
+  "CHATGPT",
+  "GEMINI",
+  "PERPLEXITY",
+  "LOCAL SEARCH",
+  "NATIONAL SEARCH",
+  "GLOBAL SEARCH",
+])}
 
 <section class="section">
   <div class="container intro-section">
