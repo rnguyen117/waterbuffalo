@@ -17,8 +17,8 @@ export const description =
   "Plumbing marketing for urgent and planned service searches, covering emergency plumbing, water heaters, drain cleaning, and local SEO for plumbers.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Plumbing" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Plumbing Marketing for Urgent and Planned Service Searches.",
   body: "Plumbing search demand ranges from immediate emergencies to planned installation projects. We build visibility strategies that serve both, with clear service structure and strong local presence.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -120,14 +120,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "HVAC Marketing", href: "hvac-marketing.html" },
-  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing.html" },
-  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing.html" },
+  { label: "HVAC Marketing", href: "hvac-marketing" },
+  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing" },
+  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Plumbing Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

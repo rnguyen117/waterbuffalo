@@ -17,8 +17,8 @@ export const description =
   "Search visibility for software companies competing nationally and globally, built around content architecture, technical SEO, and AI search visibility.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "SaaS & Technology" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Search Visibility Without a Service Area.",
   body: "Software companies compete nationally and globally from day one. We build visibility strategies around content architecture, technical SEO, and AI search visibility, since local signals rarely apply the way they do for other businesses.",
   secondaryLabel: "Explore AI Search",
-  secondaryHref: "../ai-search.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../ai-search",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -115,14 +115,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Financial Services Marketing", href: "financial-services-marketing.html" },
-  { label: "Legal Services Marketing", href: "legal-services-marketing.html" },
-  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing.html" },
+  { label: "Financial Services Marketing", href: "financial-services-marketing" },
+  { label: "Legal Services Marketing", href: "legal-services-marketing" },
+  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your SaaS Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

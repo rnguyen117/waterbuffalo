@@ -14,7 +14,7 @@ export const title = "About Water Buffalo Media | Built for Lasting Visibility";
 export const description =
   "Learn how Water Buffalo Media combines technical precision, steady strategy, and enduring values to build lasting search visibility.";
 
-const trail = [{ label: "Home", href: "index.html" }, { label: "About" }];
+const trail = [{ label: "Home", href: "./" }, { label: "About" }];
 
 export const schemas = [organizationSchema(), breadcrumbSchema(trail)];
 
@@ -85,9 +85,9 @@ ${renderHero({
 </section>
 
 ${renderRelatedLinks("Continue Exploring", [
-  { label: "Our Services", href: "services.html" },
-  { label: "Generative Engine Optimization", href: "ai-search.html" },
-  { label: "Contact", href: "contact.html" },
+  { label: "Our Services", href: "services" },
+  { label: "Generative Engine Optimization", href: "ai-search" },
+  { label: "Contact", href: "contact" },
 ])}
 
 ${renderCta({

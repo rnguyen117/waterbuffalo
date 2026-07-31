@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { renderPage, SITE_URL } from "./components.mjs";
+import { renderPage, SITE_URL, publicUrlPath } from "./components.mjs";
 
 import * as home from "./pages/home.mjs";
 import * as services from "./pages/services.mjs";
@@ -99,7 +99,7 @@ for (const page of pages) {
 // sitemap.xml (exclude 404)
 const urls = pages
   .filter((p) => p.path !== "/404.html")
-  .map((p) => `  <url><loc>${SITE_URL}${p.path === "/" ? "/" : p.path}</loc></url>`)
+  .map((p) => `  <url><loc>${SITE_URL}${publicUrlPath(p.path)}</loc></url>`)
   .join("\n");
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 writeFileSync(join(siteRoot, "sitemap.xml"), sitemap);

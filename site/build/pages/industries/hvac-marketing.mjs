@@ -17,8 +17,8 @@ export const description =
   "HVAC marketing built for year-round search visibility, covering seasonal demand, emergency repair searches, Google Maps, and local SEO for HVAC companies.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "HVAC" },
 ];
 
@@ -63,8 +63,8 @@ ${renderHero({
   headline: "HVAC Marketing Built for Year-Round Search Visibility.",
   body: "Heating and cooling demand shifts with the seasons, but search visibility has to hold up all year. We build HVAC marketing strategies around emergency repair searches, seasonal maintenance, and the local trust signals that turn searches into service calls.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -131,14 +131,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Plumbing Marketing", href: "plumbing-marketing.html" },
-  { label: "Electrical Contractor Marketing", href: "electrical-contractor-marketing.html" },
-  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing.html" },
+  { label: "Plumbing Marketing", href: "plumbing-marketing" },
+  { label: "Electrical Contractor Marketing", href: "electrical-contractor-marketing" },
+  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your HVAC Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

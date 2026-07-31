@@ -14,7 +14,7 @@ export const title = "SEO and Search Visibility Services | Water Buffalo Media";
 export const description =
   "Explore Local SEO, National SEO, Global SEO, Generative Engine Optimization, Google Business Profile Optimization, and Technical SEO services.";
 
-const trail = [{ label: "Home", href: "index.html" }, { label: "Services" }];
+const trail = [{ label: "Home", href: "./" }, { label: "Services" }];
 
 export const schemas = [
   organizationSchema(),

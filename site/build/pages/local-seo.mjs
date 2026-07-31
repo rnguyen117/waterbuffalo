@@ -15,8 +15,8 @@ export const description =
   "Build durable local visibility across Google Search and Maps with service-area strategy, location architecture, GBP optimization, and reviews.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "Local SEO" },
 ];
 
@@ -91,9 +91,9 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Google Business Profile Optimization", href: "google-business-profile.html" },
-  { label: "Technical SEO", href: "technical-seo.html" },
-  { label: "Contact", href: "contact.html" },
+  { label: "Google Business Profile Optimization", href: "google-business-profile" },
+  { label: "Technical SEO", href: "technical-seo" },
+  { label: "Contact", href: "contact" },
 ])}
 
 ${renderCta({

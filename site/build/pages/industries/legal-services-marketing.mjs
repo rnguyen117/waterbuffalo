@@ -17,8 +17,8 @@ export const description =
   "Search visibility for law firms, combining practice-area authority, local search presence, and national reach for firms serving broader markets.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Legal Services" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Search Visibility Built Around Practice Area Authority.",
   body: "Legal searches range from urgent, local searches after an incident to slower, research-driven searches for ongoing representation. We build visibility strategies around each practice area, with the local and national reach your firm actually needs.",
   secondaryLabel: "Explore National SEO",
-  secondaryHref: "../national-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../national-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -117,14 +117,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Financial Services Marketing", href: "financial-services-marketing.html" },
-  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing.html" },
-  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing.html" },
+  { label: "Financial Services Marketing", href: "financial-services-marketing" },
+  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing" },
+  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Law Firm's Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

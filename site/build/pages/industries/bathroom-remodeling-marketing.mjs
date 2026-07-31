@@ -17,8 +17,8 @@ export const description =
   "Bathroom remodeling marketing built on service-specific pages, project galleries, reviews, and local SEO for bathroom remodeling companies.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Bathroom Remodeling" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Bathroom Remodeling Marketing That Builds Visibility and Trust.",
   body: "Bathroom remodeling customers research carefully before committing to a project. We build visibility strategies around the service-specific pages, visual proof, and local authority that support a longer, more considered decision process.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -120,14 +120,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing.html" },
-  { label: "Plumbing Marketing", href: "plumbing-marketing.html" },
-  { label: "Window Installation Marketing", href: "window-installation-marketing.html" },
+  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing" },
+  { label: "Plumbing Marketing", href: "plumbing-marketing" },
+  { label: "Window Installation Marketing", href: "window-installation-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Bathroom Remodeling Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

@@ -15,8 +15,8 @@ export const description =
   "Expand into international search markets with language targeting, hreflang, localized content, global site architecture, and technical SEO.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "Global SEO" },
 ];
 
@@ -75,9 +75,9 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Technical SEO", href: "technical-seo.html" },
-  { label: "National SEO", href: "national-seo.html" },
-  { label: "Generative Engine Optimization", href: "ai-search.html" },
+  { label: "Technical SEO", href: "technical-seo" },
+  { label: "National SEO", href: "national-seo" },
+  { label: "Generative Engine Optimization", href: "ai-search" },
 ])}
 
 ${renderCta({

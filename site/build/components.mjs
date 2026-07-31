@@ -4,48 +4,59 @@
 export const SITE_URL = "https://www.waterbuffalomedia.com";
 export const SITE_NAME = "Water Buffalo Media";
 
+// page.path always keeps its .html suffix (build.mjs needs that to know
+// which physical file to write), but Cloudflare Pages serves the
+// extensionless URL directly with a 200 — the redirect only fires the
+// other way around, from the .html URL to the clean one. So every
+// public-facing URL (canonical, OG, sitemap, schema) should be built
+// from the clean form, not the raw file path.
+export function publicUrlPath(path) {
+  if (path === "/" || path === "/index.html") return "/";
+  return path.replace(/\.html$/, "");
+}
+
 export const NAV_LINKS = [
-  { label: "Home", href: "index.html" },
+  { label: "Home", href: "./" },
   {
     label: "Services",
-    href: "services.html",
+    href: "services",
     children: [
-      { label: "Local SEO", href: "local-seo.html" },
-      { label: "National SEO", href: "national-seo.html" },
-      { label: "Global SEO", href: "global-seo.html" },
-      { label: "AI Search", href: "ai-search.html" },
-      { label: "Google Business Profile", href: "google-business-profile.html" },
-      { label: "Technical SEO", href: "technical-seo.html" },
+      { label: "Local SEO", href: "local-seo" },
+      { label: "National SEO", href: "national-seo" },
+      { label: "Global SEO", href: "global-seo" },
+      { label: "AI Search", href: "ai-search" },
+      { label: "Google Business Profile", href: "google-business-profile" },
+      { label: "Technical SEO", href: "technical-seo" },
     ],
   },
   {
     label: "Industries",
-    href: "industries.html",
+    href: "industries",
     children: [
-      { label: "HVAC", href: "industries/hvac-marketing.html" },
-      { label: "Pest Control", href: "industries/pest-control-marketing.html" },
-      { label: "Bathroom Remodeling", href: "industries/bathroom-remodeling-marketing.html" },
-      { label: "Roofing & Siding", href: "industries/roofing-siding-marketing.html" },
-      { label: "Window Installation", href: "industries/window-installation-marketing.html" },
-      { label: "Plumbing", href: "industries/plumbing-marketing.html" },
-      { label: "Electrical", href: "industries/electrical-contractor-marketing.html" },
-      { label: "Kitchen Remodeling", href: "industries/kitchen-remodeling-marketing.html" },
-      { label: "Landscaping", href: "industries/landscaping-marketing.html" },
-      { label: "Painting", href: "industries/painting-contractor-marketing.html" },
-      { label: "Financial Services", href: "industries/financial-services-marketing.html" },
-      { label: "Legal Services", href: "industries/legal-services-marketing.html" },
-      { label: "Healthcare Providers", href: "industries/healthcare-provider-marketing.html" },
-      { label: "SaaS & Technology", href: "industries/saas-technology-marketing.html" },
+      { label: "HVAC", href: "industries/hvac-marketing" },
+      { label: "Pest Control", href: "industries/pest-control-marketing" },
+      { label: "Bathroom Remodeling", href: "industries/bathroom-remodeling-marketing" },
+      { label: "Roofing & Siding", href: "industries/roofing-siding-marketing" },
+      { label: "Window Installation", href: "industries/window-installation-marketing" },
+      { label: "Plumbing", href: "industries/plumbing-marketing" },
+      { label: "Electrical", href: "industries/electrical-contractor-marketing" },
+      { label: "Kitchen Remodeling", href: "industries/kitchen-remodeling-marketing" },
+      { label: "Landscaping", href: "industries/landscaping-marketing" },
+      { label: "Painting", href: "industries/painting-contractor-marketing" },
+      { label: "Financial Services", href: "industries/financial-services-marketing" },
+      { label: "Legal Services", href: "industries/legal-services-marketing" },
+      { label: "Healthcare Providers", href: "industries/healthcare-provider-marketing" },
+      { label: "SaaS & Technology", href: "industries/saas-technology-marketing" },
     ],
   },
-  { label: "About", href: "about.html" },
-  { label: "Contact", href: "contact.html" },
+  { label: "About", href: "about" },
+  { label: "Contact", href: "contact" },
 ];
 
 export const INDUSTRIES = [
   {
     slug: "hvac-marketing",
-    href: "industries/hvac-marketing.html",
+    href: "industries/hvac-marketing",
     name: "HVAC",
     title: "HVAC Marketing",
     description:
@@ -54,7 +65,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "pest-control-marketing",
-    href: "industries/pest-control-marketing.html",
+    href: "industries/pest-control-marketing",
     name: "Pest Control",
     title: "Pest Control Marketing",
     description:
@@ -63,7 +74,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "bathroom-remodeling-marketing",
-    href: "industries/bathroom-remodeling-marketing.html",
+    href: "industries/bathroom-remodeling-marketing",
     name: "Bathroom Remodeling",
     title: "Bathroom Remodeling Marketing",
     description:
@@ -72,7 +83,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "roofing-siding-marketing",
-    href: "industries/roofing-siding-marketing.html",
+    href: "industries/roofing-siding-marketing",
     name: "Roofing & Siding",
     title: "Roofing & Siding Marketing",
     description:
@@ -81,7 +92,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "window-installation-marketing",
-    href: "industries/window-installation-marketing.html",
+    href: "industries/window-installation-marketing",
     name: "Window Installation",
     title: "Window Installation Marketing",
     description:
@@ -90,7 +101,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "plumbing-marketing",
-    href: "industries/plumbing-marketing.html",
+    href: "industries/plumbing-marketing",
     name: "Plumbing",
     title: "Plumbing Marketing",
     description:
@@ -99,7 +110,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "electrical-contractor-marketing",
-    href: "industries/electrical-contractor-marketing.html",
+    href: "industries/electrical-contractor-marketing",
     name: "Electrical",
     title: "Electrical Contractor Marketing",
     description:
@@ -108,7 +119,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "kitchen-remodeling-marketing",
-    href: "industries/kitchen-remodeling-marketing.html",
+    href: "industries/kitchen-remodeling-marketing",
     name: "Kitchen Remodeling",
     title: "Kitchen Remodeling Marketing",
     description:
@@ -117,7 +128,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "landscaping-marketing",
-    href: "industries/landscaping-marketing.html",
+    href: "industries/landscaping-marketing",
     name: "Landscaping",
     title: "Landscaping Marketing",
     description:
@@ -126,7 +137,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "painting-contractor-marketing",
-    href: "industries/painting-contractor-marketing.html",
+    href: "industries/painting-contractor-marketing",
     name: "Painting",
     title: "Painting Contractor Marketing",
     description:
@@ -135,7 +146,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "financial-services-marketing",
-    href: "industries/financial-services-marketing.html",
+    href: "industries/financial-services-marketing",
     name: "Financial Services",
     title: "Financial Services Marketing",
     description:
@@ -144,7 +155,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "legal-services-marketing",
-    href: "industries/legal-services-marketing.html",
+    href: "industries/legal-services-marketing",
     name: "Legal Services",
     title: "Legal Services Marketing",
     description:
@@ -153,7 +164,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "healthcare-provider-marketing",
-    href: "industries/healthcare-provider-marketing.html",
+    href: "industries/healthcare-provider-marketing",
     name: "Healthcare Providers",
     title: "Healthcare Provider Marketing",
     description:
@@ -162,7 +173,7 @@ export const INDUSTRIES = [
   },
   {
     slug: "saas-technology-marketing",
-    href: "industries/saas-technology-marketing.html",
+    href: "industries/saas-technology-marketing",
     name: "SaaS & Technology",
     title: "SaaS and Technology Marketing",
     description:
@@ -174,7 +185,7 @@ export const INDUSTRIES = [
 export const SERVICES = [
   {
     slug: "local-seo",
-    href: "local-seo.html",
+    href: "local-seo",
     name: "Local SEO",
     navLabel: "Local SEO",
     title: "Own Your Service Area",
@@ -192,7 +203,7 @@ export const SERVICES = [
   },
   {
     slug: "national-seo",
-    href: "national-seo.html",
+    href: "national-seo",
     name: "National SEO",
     navLabel: "National SEO",
     title: "Build Authority That Scales",
@@ -210,7 +221,7 @@ export const SERVICES = [
   },
   {
     slug: "global-seo",
-    href: "global-seo.html",
+    href: "global-seo",
     name: "Global SEO",
     navLabel: "Global SEO",
     title: "Expand Without Losing Clarity",
@@ -228,7 +239,7 @@ export const SERVICES = [
   },
   {
     slug: "ai-search",
-    href: "ai-search.html",
+    href: "ai-search",
     name: "Generative Engine Optimization",
     navLabel: "AI Search",
     title: "Be Recognized by AI Search",
@@ -246,7 +257,7 @@ export const SERVICES = [
   },
   {
     slug: "google-business-profile",
-    href: "google-business-profile.html",
+    href: "google-business-profile",
     name: "Google Business Profile Optimization",
     navLabel: "Google Business Profile",
     title: "Strengthen Your Local Presence",
@@ -264,7 +275,7 @@ export const SERVICES = [
   },
   {
     slug: "technical-seo",
-    href: "technical-seo.html",
+    href: "technical-seo",
     name: "Technical SEO",
     navLabel: "Technical SEO",
     title: "Build a Website Search Engines Can Read",
@@ -328,7 +339,7 @@ export function renderHead({
   noindex = false,
   inlineCss = "",
 }) {
-  const canonical = `${SITE_URL}${path}`;
+  const canonical = `${SITE_URL}${publicUrlPath(path)}`;
   const base = basePath(path);
   const schemaTags = schemas
     .map((s) => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
@@ -388,7 +399,7 @@ export function serviceSchema({ name, description, path, areaServed = "Worldwide
     "description": description,
     "provider": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL },
     "areaServed": areaServed,
-    "url": `${SITE_URL}${path}`,
+    "url": `${SITE_URL}${publicUrlPath(path)}`,
   };
 }
 
@@ -405,9 +416,11 @@ export function breadcrumbSchema(trail) {
       // directory-deep pages like /industries/*) and prefixing SITE_URL
       // reconstructs the correct absolute URL regardless of how deep the
       // current page sits. Without this, SITE_URL was being concatenated
-      // directly onto the relative href (e.g. "index.html"), producing
-      // malformed URLs like "https://site.comindex.html".
-      "item": item.href ? `${SITE_URL}/${item.href.replace(/^(\.\.\/)+/, "")}` : undefined,
+      // directly onto the relative href (e.g. "./"), producing
+      // malformed URLs like "https://site.comindex".
+      "item": item.href
+        ? `${SITE_URL}/${item.href.replace(/^(\.\.\/)+/, "").replace(/^\.\/$/, "")}`
+        : undefined,
     })),
   };
 }
@@ -441,27 +454,34 @@ export function faqSchema(items) {
 // ---------------------------------------------------------------
 // Header / Nav
 // ---------------------------------------------------------------
+// Normalizes a raw page.path (e.g. "/local-seo.html", "/") into the
+// same extensionless form used by NAV_LINKS/SERVICES/INDUSTRIES hrefs,
+// purely so the two can be compared for active-link highlighting.
 function normPath(p) {
-  return p === "/" ? "index.html" : p.replace(/^\//, "");
+  if (p === "/") return "./";
+  return p.replace(/^\//, "").replace(/\.html$/, "");
 }
 
 // The site was flat (every page at site root) until the /industries/*
 // pages introduced one level of nesting. Header, footer, favicon, and
 // the main.js <script> tag all reference root-relative paths like
-// "contact.html" or "assets/...", which only resolve correctly from a
+// "contact" or "assets/...", which only resolve correctly from a
 // page actually sitting at the root. basePath() computes the "../"
 // prefix needed so those same root-relative values still resolve
 // correctly from a page nested one (or more) directories deep.
-function basePath(currentPath) {
-  const depth = normPath(currentPath).split("/").length - 1;
+// Deliberately computed from the raw path (not normPath()'s output,
+// which rewrites "/" to "./" for link-comparison purposes and would
+// throw this depth count off by one).
+function basePath(path) {
+  const depth = path === "/" ? 0 : path.replace(/^\//, "").split("/").length - 1;
   return depth > 0 ? "../".repeat(depth) : "";
 }
 
 export function renderHeader(currentPath) {
   const current = normPath(currentPath);
   const base = basePath(currentPath);
-  const isServicesGroup = SERVICES.some((s) => s.href === current) || current === "services.html";
-  const isIndustriesGroup = INDUSTRIES.some((s) => s.href === current) || current === "industries.html";
+  const isServicesGroup = SERVICES.some((s) => s.href === current) || current === "services";
+  const isIndustriesGroup = INDUSTRIES.some((s) => s.href === current) || current === "industries";
 
   const desktopLinks = NAV_LINKS.map((link) => {
     const groupActive = link.label === "Services" ? isServicesGroup : link.label === "Industries" ? isIndustriesGroup : false;
@@ -495,7 +515,7 @@ export function renderHeader(currentPath) {
 
   return `<header class="site-header">
   <div class="container site-header__inner">
-    <a class="brand" href="${base}index.html" aria-label="${SITE_NAME} home">
+    <a class="brand" href="${base || "./"}" aria-label="${SITE_NAME} home">
       ${brandGlyph(base)}
       <span class="brand__word">Water Buffalo <em>Media</em></span>
     </a>
@@ -504,7 +524,7 @@ export function renderHeader(currentPath) {
       ${desktopLinks}
     </nav>
 
-    <a class="btn btn--primary btn--sm nav__cta" href="${base}contact.html">${CTA_LABEL}</a>
+    <a class="btn btn--primary btn--sm nav__cta" href="${base}contact">${CTA_LABEL}</a>
 
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav">
       <span></span><span></span><span></span>
@@ -513,7 +533,7 @@ export function renderHeader(currentPath) {
 
   <div class="mobile-nav" id="mobile-nav" hidden>
     ${mobileLinks}
-    <a class="btn btn--primary" href="${base}contact.html">${CTA_LABEL}</a>
+    <a class="btn btn--primary" href="${base}contact">${CTA_LABEL}</a>
   </div>
 </header>`;
 }
@@ -530,44 +550,44 @@ export function renderFooter(currentPath = "/") {
   return `<footer class="site-footer">
   <div class="container footer__top">
     <div class="footer__brand">
-      <a class="brand" href="${base}index.html">
+      <a class="brand" href="${base || "./"}">
         ${brandGlyph(base)}
         <span class="brand__word">Water Buffalo <em>Media</em></span>
       </a>
       <h2 class="footer__headline">Built for Lasting Visibility.</h2>
       <p>Water Buffalo Media helps businesses build durable visibility across Google Search, Google Maps, and emerging AI search platforms. Our work is grounded in strong technical foundations, thoughtful strategy, and steady long-term progress.</p>
       <a class="footer__email" href="mailto:contact@waterbuffalomedia.com">contact@waterbuffalomedia.com</a>
-      <a class="btn btn--primary" href="${base}contact.html">${CTA_LABEL}</a>
+      <a class="btn btn--primary" href="${base}contact">${CTA_LABEL}</a>
     </div>
 
     <nav class="footer__col" aria-label="Site">
       <h4>Site</h4>
-      <a href="${base}index.html">Home</a>
-      <a href="${base}about.html">About</a>
-      <a href="${base}services.html">Services</a>
-      <a href="${base}contact.html">Contact</a>
-      <a href="${base}privacy.html">Privacy Policy</a>
+      <a href="${base || "./"}">Home</a>
+      <a href="${base}about">About</a>
+      <a href="${base}services">Services</a>
+      <a href="${base}contact">Contact</a>
+      <a href="${base}privacy">Privacy Policy</a>
     </nav>
 
     <nav class="footer__col" aria-label="Services">
       <h4>Services</h4>
-      <a href="${base}local-seo.html">Local SEO</a>
-      <a href="${base}national-seo.html">National SEO</a>
-      <a href="${base}global-seo.html">Global SEO</a>
-      <a href="${base}ai-search.html">Generative Engine Optimization</a>
-      <a href="${base}google-business-profile.html">Google Business Profile Optimization</a>
-      <a href="${base}technical-seo.html">Technical SEO</a>
+      <a href="${base}local-seo">Local SEO</a>
+      <a href="${base}national-seo">National SEO</a>
+      <a href="${base}global-seo">Global SEO</a>
+      <a href="${base}ai-search">Generative Engine Optimization</a>
+      <a href="${base}google-business-profile">Google Business Profile Optimization</a>
+      <a href="${base}technical-seo">Technical SEO</a>
     </nav>
 
     <nav class="footer__col" aria-label="Industries">
       <h4>Industries</h4>
-      <a href="${base}industries/hvac-marketing.html">HVAC</a>
-      <a href="${base}industries/plumbing-marketing.html">Plumbing</a>
-      <a href="${base}industries/electrical-contractor-marketing.html">Electrical</a>
-      <a href="${base}industries/roofing-siding-marketing.html">Roofing & Siding</a>
-      <a href="${base}industries/kitchen-remodeling-marketing.html">Kitchen Remodeling</a>
-      <a href="${base}industries/landscaping-marketing.html">Landscaping</a>
-      <a href="${base}industries.html">View All Industries</a>
+      <a href="${base}industries/hvac-marketing">HVAC</a>
+      <a href="${base}industries/plumbing-marketing">Plumbing</a>
+      <a href="${base}industries/electrical-contractor-marketing">Electrical</a>
+      <a href="${base}industries/roofing-siding-marketing">Roofing & Siding</a>
+      <a href="${base}industries/kitchen-remodeling-marketing">Kitchen Remodeling</a>
+      <a href="${base}industries/landscaping-marketing">Landscaping</a>
+      <a href="${base}industries">View All Industries</a>
     </nav>
   </div>
 
@@ -598,7 +618,7 @@ export function renderBreadcrumbs(trail) {
 // ---------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------
-export function renderHero({ eyebrow, headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact.html", secondaryLabel, secondaryHref, showBuffalo = false, showLogoMark = false, logoMarkBase = "", compact = false, hideActions = false }) {
+export function renderHero({ eyebrow, headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact", secondaryLabel, secondaryHref, showBuffalo = false, showLogoMark = false, logoMarkBase = "", compact = false, hideActions = false }) {
   const mark = showBuffalo
     ? `<img class="hero__buffalo" src="assets/buffalo-hero.png" alt="" aria-hidden="true" loading="eager" fetchpriority="high" width="798" height="884">`
     : showLogoMark
@@ -639,7 +659,7 @@ export function renderMarquee(items) {
 // ---------------------------------------------------------------
 // CTA section
 // ---------------------------------------------------------------
-export function renderCta({ headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact.html", secondaryLabel, secondaryHref }) {
+export function renderCta({ headline, body, primaryLabel = CTA_LABEL, primaryHref = "contact", secondaryLabel, secondaryHref }) {
   return `<section class="section cta-section">
     <div class="container cta-section__inner">
       <h2 class="reveal">${esc(headline)}</h2>

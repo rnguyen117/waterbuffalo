@@ -15,8 +15,8 @@ export const description =
   "Improve local visibility, calls, website visits, and customer trust with structured Google Business Profile optimization and ongoing local search strategy.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "Google Business Profile" },
 ];
 
@@ -87,9 +87,9 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Local SEO", href: "local-seo.html" },
-  { label: "Technical SEO", href: "technical-seo.html" },
-  { label: "Contact", href: "contact.html" },
+  { label: "Local SEO", href: "local-seo" },
+  { label: "Technical SEO", href: "technical-seo" },
+  { label: "Contact", href: "contact" },
 ])}
 
 ${renderCta({

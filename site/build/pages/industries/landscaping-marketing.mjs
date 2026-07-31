@@ -17,8 +17,8 @@ export const description =
   "Landscaping marketing that supports seasonal and long-term growth, covering design, installation, lawn care, hardscaping, and local SEO for landscaping companies.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Landscaping" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Landscaping Marketing That Supports Seasonal and Long-Term Growth.",
   body: "Landscaping demand includes both recurring maintenance and larger seasonal projects. We build visibility strategies that hold up across the full calendar, not just the busiest months.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -121,14 +121,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Pest Control Marketing", href: "pest-control-marketing.html" },
-  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing.html" },
-  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing.html" },
+  { label: "Pest Control Marketing", href: "pest-control-marketing" },
+  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing" },
+  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Landscaping Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

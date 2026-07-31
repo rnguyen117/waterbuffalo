@@ -17,8 +17,8 @@ export const description =
   "Roofing and siding marketing built for competitive local markets, covering repair, replacement, storm-driven searches, and local SEO for roofing contractors.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Roofing & Siding" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Roofing and Siding Marketing Built for Competitive Local Markets.",
   body: "Roofing and siding demand ranges from urgent storm-driven repairs to planned replacement projects. We build visibility strategies that hold up across both, with clear service structure and strong local presence.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -121,14 +121,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Window Installation Marketing", href: "window-installation-marketing.html" },
-  { label: "HVAC Marketing", href: "hvac-marketing.html" },
-  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing.html" },
+  { label: "Window Installation Marketing", href: "window-installation-marketing" },
+  { label: "HVAC Marketing", href: "hvac-marketing" },
+  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Roofing and Siding Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

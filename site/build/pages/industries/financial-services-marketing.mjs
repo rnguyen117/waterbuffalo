@@ -17,8 +17,8 @@ export const description =
   "Search visibility for financial advisors, wealth management, and accounting firms, combining national content authority with local branch visibility.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Financial Services" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Search Visibility Built on Authority and Trust.",
   body: "Financial services customers research carefully before choosing a firm. We build visibility strategies that combine national content authority with local branch presence, without ever stepping into financial advice.",
   secondaryLabel: "Explore National SEO",
-  secondaryHref: "../national-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../national-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -117,14 +117,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Legal Services Marketing", href: "legal-services-marketing.html" },
-  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing.html" },
-  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing.html" },
+  { label: "Legal Services Marketing", href: "legal-services-marketing" },
+  { label: "Healthcare Provider Marketing", href: "healthcare-provider-marketing" },
+  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Financial Services Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

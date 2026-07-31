@@ -20,7 +20,7 @@ ${renderHero({
   headline: "Built for Lasting Visibility.",
   body: "<span class=\"hero__lead-brand\">Water Buffalo Media</span> helps businesses become easier to find, understand, and trust across Google Search, Google Maps, and AI-generated answers. We build the technical foundation, content architecture, and digital authority required for sustainable search growth.",
   secondaryLabel: "Explore Our Services",
-  secondaryHref: "services.html",
+  secondaryHref: "services",
   showBuffalo: true,
 })}
 
@@ -139,7 +139,7 @@ ${renderCta({
   headline: "Build Visibility That Can Carry Your Business Forward.",
   body: "Request a clear assessment of your current search presence, the obstacles limiting your visibility, and the strongest opportunities for improvement.",
   secondaryLabel: "Contact Water Buffalo Media",
-  secondaryHref: "contact.html",
+  secondaryHref: "contact",
 })}
 `;
 

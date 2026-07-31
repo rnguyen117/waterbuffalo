@@ -17,8 +17,8 @@ export const description =
   "Search visibility for medical and dental practices, combining local Google Maps presence with credible, patient-focused content.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Healthcare Providers" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Search Visibility Built on Patient Trust.",
   body: "Patients research providers, insurance, and availability before booking an appointment. We build visibility strategies around clear, credible service information and strong local presence, without ever providing medical guidance ourselves.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -116,14 +116,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Financial Services Marketing", href: "financial-services-marketing.html" },
-  { label: "Legal Services Marketing", href: "legal-services-marketing.html" },
-  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing.html" },
+  { label: "Financial Services Marketing", href: "financial-services-marketing" },
+  { label: "Legal Services Marketing", href: "legal-services-marketing" },
+  { label: "SaaS and Technology Marketing", href: "saas-technology-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Practice's Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

@@ -17,8 +17,8 @@ export const description =
   "Kitchen remodeling marketing for high-value projects, covering cabinet replacement, countertops, design-build services, and SEO for kitchen remodeling companies.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Kitchen Remodeling" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Kitchen Remodeling Marketing for High-Value Projects.",
   body: "Kitchen remodeling is a considered, high-value decision. We build visibility strategies around the visual proof, service-specific content, and local authority that support a longer customer research process.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -120,14 +120,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing.html" },
-  { label: "Plumbing Marketing", href: "plumbing-marketing.html" },
-  { label: "Electrical Contractor Marketing", href: "electrical-contractor-marketing.html" },
+  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing" },
+  { label: "Plumbing Marketing", href: "plumbing-marketing" },
+  { label: "Electrical Contractor Marketing", href: "electrical-contractor-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Kitchen Remodeling Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

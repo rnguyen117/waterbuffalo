@@ -17,8 +17,8 @@ export const description =
   "Painting contractor marketing that turns search interest into opportunities, covering interior and exterior painting, project galleries, and local SEO for painters.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Painting" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Painting Contractor Marketing That Turns Search Interest Into Opportunities.",
   body: "Painting demand shifts with the seasons and spans both interior and exterior projects. We build visibility strategies around clear service pages, visual proof, and strong local presence.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -120,14 +120,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing.html" },
-  { label: "Window Installation Marketing", href: "window-installation-marketing.html" },
-  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing.html" },
+  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing" },
+  { label: "Window Installation Marketing", href: "window-installation-marketing" },
+  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Painting Contractor Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

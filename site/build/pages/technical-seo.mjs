@@ -15,8 +15,8 @@ export const description =
   "Improve crawling, indexing, site speed, Core Web Vitals, structured data, architecture, and search performance with technical SEO services.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "Technical SEO" },
 ];
 
@@ -82,11 +82,11 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Local SEO", href: "local-seo.html" },
-  { label: "National SEO", href: "national-seo.html" },
-  { label: "Global SEO", href: "global-seo.html" },
-  { label: "Generative Engine Optimization", href: "ai-search.html" },
-  { label: "Google Business Profile Optimization", href: "google-business-profile.html" },
+  { label: "Local SEO", href: "local-seo" },
+  { label: "National SEO", href: "national-seo" },
+  { label: "Global SEO", href: "global-seo" },
+  { label: "Generative Engine Optimization", href: "ai-search" },
+  { label: "Google Business Profile Optimization", href: "google-business-profile" },
 ])}
 
 ${renderCta({

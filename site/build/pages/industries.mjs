@@ -14,7 +14,7 @@ export const title = "Industry Marketing and SEO Services | Water Buffalo Media"
 export const description =
   "Search visibility strategies built around how customers research and choose businesses in HVAC, plumbing, remodeling, roofing, and other service industries.";
 
-const trail = [{ label: "Home", href: "index.html" }, { label: "Industries" }];
+const trail = [{ label: "Home", href: "./" }, { label: "Industries" }];
 
 export const schemas = [
   organizationSchema(),
@@ -76,7 +76,7 @@ ${renderCta({
   headline: "Not Sure Where Your Industry Fits?",
   body: "Request a free audit and we will review your current search presence in the context of your specific market.",
   secondaryLabel: "Explore Our Services",
-  secondaryHref: "services.html",
+  secondaryHref: "services",
 })}
 `;
 

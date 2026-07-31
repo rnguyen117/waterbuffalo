@@ -15,8 +15,8 @@ export const description =
   "Improve how AI platforms understand and recommend your business through entity clarity, structured content, and authority signals for AI search.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "AI Search" },
 ];
 
@@ -78,9 +78,9 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Technical SEO", href: "technical-seo.html" },
-  { label: "National SEO", href: "national-seo.html" },
-  { label: "About", href: "about.html" },
+  { label: "Technical SEO", href: "technical-seo" },
+  { label: "National SEO", href: "national-seo" },
+  { label: "About", href: "about" },
 ])}
 
 ${renderCta({

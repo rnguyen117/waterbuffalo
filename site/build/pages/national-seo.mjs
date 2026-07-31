@@ -15,8 +15,8 @@ export const description =
   "Build scalable national search authority through content architecture, technical SEO, internal linking, topical depth, and competitive search strategy.";
 
 const trail = [
-  { label: "Home", href: "index.html" },
-  { label: "Services", href: "services.html" },
+  { label: "Home", href: "./" },
+  { label: "Services", href: "services" },
   { label: "National SEO" },
 ];
 
@@ -76,9 +76,9 @@ ${renderSectionStack([
 ])}
 
 ${renderRelatedLinks("Related Services", [
-  { label: "Technical SEO", href: "technical-seo.html" },
-  { label: "Generative Engine Optimization", href: "ai-search.html" },
-  { label: "Global SEO", href: "global-seo.html" },
+  { label: "Technical SEO", href: "technical-seo" },
+  { label: "Generative Engine Optimization", href: "ai-search" },
+  { label: "Global SEO", href: "global-seo" },
 ])}
 
 ${renderCta({

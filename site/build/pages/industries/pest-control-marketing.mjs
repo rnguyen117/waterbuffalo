@@ -17,8 +17,8 @@ export const description =
   "Pest control marketing for high-intent local searches, covering residential and commercial pest issues and Google Maps visibility.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Pest Control" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Pest Control Marketing for High-Intent Local Searches.",
   body: "Pest control searches are usually problem-driven and local. We build visibility strategies around the specific pests customers are dealing with, the trust signals that matter most, and the local search results where pest control decisions are made.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -123,14 +123,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Landscaping Marketing", href: "landscaping-marketing.html" },
-  { label: "HVAC Marketing", href: "hvac-marketing.html" },
-  { label: "Plumbing Marketing", href: "plumbing-marketing.html" },
+  { label: "Landscaping Marketing", href: "landscaping-marketing" },
+  { label: "HVAC Marketing", href: "hvac-marketing" },
+  { label: "Plumbing Marketing", href: "plumbing-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Pest Control Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

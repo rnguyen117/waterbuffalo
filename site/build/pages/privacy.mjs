@@ -5,7 +5,7 @@ export const title = "Privacy Policy | Water Buffalo Media";
 export const description =
   "Read the Water Buffalo Media privacy policy, including how contact form submissions, analytics, cookies, and third-party services are handled.";
 
-const trail = [{ label: "Home", href: "index.html" }, { label: "Privacy Policy" }];
+const trail = [{ label: "Home", href: "./" }, { label: "Privacy Policy" }];
 
 export const schemas = [organizationSchema(), breadcrumbSchema(trail)];
 

@@ -17,8 +17,8 @@ export const description =
   "Window installation marketing that reaches ready-to-buy homeowners, covering replacement windows, product comparisons, and local SEO for window installers.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Window Installation" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Window Installation Marketing That Reaches Ready-to-Buy Homeowners.",
   body: "Window replacement customers compare products, installers, and estimates before making a decision. We build visibility strategies around that comparison process, with clear product information and strong local presence.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -119,14 +119,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing.html" },
-  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing.html" },
-  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing.html" },
+  { label: "Roofing and Siding Marketing", href: "roofing-siding-marketing" },
+  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing" },
+  { label: "Painting Contractor Marketing", href: "painting-contractor-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Window Installation Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;

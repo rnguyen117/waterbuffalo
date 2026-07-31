@@ -12,7 +12,7 @@ export const title = "Contact Water Buffalo Media | Request a Free Audit";
 export const description =
   "Contact Water Buffalo Media to request a free search visibility audit or discuss Local SEO, Technical SEO, GBP, and AI search strategy.";
 
-const trail = [{ label: "Home", href: "index.html" }, { label: "Contact" }];
+const trail = [{ label: "Home", href: "./" }, { label: "Contact" }];
 
 const faqItems = [
   {

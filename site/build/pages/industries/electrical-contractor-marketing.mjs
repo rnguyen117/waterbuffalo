@@ -17,8 +17,8 @@ export const description =
   "Electrical contractor marketing built around local demand, covering panel upgrades, EV charger installation, and local SEO for electricians.";
 
 const trail = [
-  { label: "Home", href: "../index.html" },
-  { label: "Industries", href: "../industries.html" },
+  { label: "Home", href: "../" },
+  { label: "Industries", href: "../industries" },
   { label: "Electrical" },
 ];
 
@@ -59,8 +59,8 @@ ${renderHero({
   headline: "Electrical Contractor Marketing Built Around Local Demand.",
   body: "Electrical searches range from urgent repairs to planned upgrades like panel replacements and EV charger installation. We build visibility strategies around clear service structure and strong local presence.",
   secondaryLabel: "Explore Local SEO",
-  secondaryHref: "../local-seo.html",
-  primaryHref: "../contact.html",
+  secondaryHref: "../local-seo",
+  primaryHref: "../contact",
   showLogoMark: true,
   logoMarkBase: "../",
 })}
@@ -118,14 +118,14 @@ ${renderSectionStack([
 ${renderFaq(faqItems)}
 
 ${renderRelatedLinks("Related Industries", [
-  { label: "HVAC Marketing", href: "hvac-marketing.html" },
-  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing.html" },
-  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing.html" },
+  { label: "HVAC Marketing", href: "hvac-marketing" },
+  { label: "Kitchen Remodeling Marketing", href: "kitchen-remodeling-marketing" },
+  { label: "Bathroom Remodeling Marketing", href: "bathroom-remodeling-marketing" },
 ])}
 
 ${renderCta({
   headline: "Ready to Strengthen Your Electrical Contractor Search Visibility?",
   body: "Request a free audit and we will review your current visibility across Google Search, Google Maps, and AI-generated answers.",
-  primaryHref: "../contact.html",
+  primaryHref: "../contact",
 })}
 `;
