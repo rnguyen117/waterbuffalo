@@ -57,15 +57,38 @@
       var btn = form.querySelector("button");
       var original = btn.textContent;
       var fields = form.querySelectorAll("input, select, textarea");
-      btn.textContent = "Thanks — we'll be in touch";
+      var data = new FormData(form);
+      var endpoint = form.action.replace("formsubmit.co/", "formsubmit.co/ajax/");
+
+      btn.textContent = "Sending…";
       btn.disabled = true;
       fields.forEach(function (f) { f.disabled = true; });
-      setTimeout(function () {
-        btn.textContent = original;
-        btn.disabled = false;
-        fields.forEach(function (f) { f.disabled = false; });
-        form.reset();
-      }, 4000);
+
+      fetch(endpoint, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: data,
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("Request failed");
+          return res.json();
+        })
+        .then(function (json) {
+          if (json && json.success === "false") throw new Error(json.message || "Request failed");
+          btn.textContent = "Thanks — we'll be in touch";
+          form.reset();
+          setTimeout(function () {
+            btn.textContent = original;
+            btn.disabled = false;
+            fields.forEach(function (f) { f.disabled = false; });
+          }, 5000);
+        })
+        .catch(function () {
+          btn.textContent = "Something went wrong — please try again";
+          btn.disabled = false;
+          fields.forEach(function (f) { f.disabled = false; });
+          setTimeout(function () { btn.textContent = original; }, 5000);
+        });
     });
   }
 })();

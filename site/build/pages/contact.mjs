@@ -51,8 +51,14 @@ ${renderHero({
 
 <section class="section contact-section">
   <div class="container contact-section__inner">
-    <form class="contact-form" action="#" method="post">
+    <form class="contact-form" action="https://formsubmit.co/audits@waterbuffalomedia.com" method="POST">
       <h2 class="reveal">Request a Free Audit</h2>
+      <p class="contact-form__email reveal">Prefer email? Reach us directly at <a href="mailto:contact@waterbuffalomedia.com">contact@waterbuffalomedia.com</a>.</p>
+
+      <input type="hidden" name="_subject" value="New Free Audit Request — Water Buffalo Media">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
       <div class="contact-form__grid">
         <div class="field">

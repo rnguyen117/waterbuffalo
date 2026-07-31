@@ -353,6 +353,7 @@ export function renderFooter() {
       </a>
       <h2 class="footer__headline">Built for Lasting Visibility.</h2>
       <p>Water Buffalo Media helps businesses build durable visibility across Google Search, Google Maps, and emerging AI search platforms. Our work is grounded in strong technical foundations, thoughtful strategy, and steady long-term progress.</p>
+      <a class="footer__email" href="mailto:contact@waterbuffalomedia.com">contact@waterbuffalomedia.com</a>
       <a class="btn btn--primary" href="contact.html">${CTA_LABEL}</a>
     </div>
 
