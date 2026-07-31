@@ -23,6 +23,13 @@
     });
   }
 
+  // Close the desktop Services dropdown when clicking outside it.
+  document.querySelectorAll(".nav-dropdown").forEach(function (dd) {
+    document.addEventListener("click", function (e) {
+      if (dd.open && !dd.contains(e.target)) dd.removeAttribute("open");
+    });
+  });
+
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var revealEls = document.querySelectorAll(".reveal");
 
@@ -43,19 +50,20 @@
     revealEls.forEach(function (el) { observer.observe(el); });
   }
 
-  var form = document.querySelector(".cta__form");
+  var form = document.querySelector(".contact-form");
   if (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var btn = form.querySelector("button");
       var original = btn.textContent;
+      var fields = form.querySelectorAll("input, select, textarea");
       btn.textContent = "Thanks — we'll be in touch";
       btn.disabled = true;
-      form.querySelectorAll("input").forEach(function (i) { i.disabled = true; });
+      fields.forEach(function (f) { f.disabled = true; });
       setTimeout(function () {
         btn.textContent = original;
         btn.disabled = false;
-        form.querySelectorAll("input").forEach(function (i) { i.disabled = false; });
+        fields.forEach(function (f) { f.disabled = false; });
         form.reset();
       }, 4000);
     });
