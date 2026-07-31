@@ -349,8 +349,22 @@ h1, h2, h3, h4 {
   isolation: isolate;
   display: flex;
   align-items: center;
-  min-height: 100vh;
-  min-height: 100svh;
+}
+/* Only the homepage hero (never .hero--compact) is followed by the
+   marquee — size it to the exact remaining space (viewport minus the
+   fixed-height header and marquee) so the marquee always rests right
+   at the bottom of the first screen instead of drifting off until a
+   scroll. Header (75px) and marquee (64px) are both fixed-height, so
+   this is exact, not estimated. */
+.hero:not(.hero--compact) {
+  min-height: calc(100vh - 139px);
+  min-height: calc(100svh - 139px);
+}
+@media (max-width: 640px) {
+  .hero:not(.hero--compact) {
+    min-height: calc(100vh - 131px);
+    min-height: calc(100svh - 131px);
+  }
 }
 .hero--compact { padding: 68px 0 64px; min-height: 0; display: block; }
 .hero--404 { padding: 120px 0; }
@@ -439,9 +453,12 @@ h1, h2, h3, h4 {
   border-top: 1px solid var(--dark-border);
   border-bottom: 1px solid var(--dark-border);
   overflow: hidden;
-  padding: 22px 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 .marquee__track {
   display: flex;
@@ -901,7 +918,7 @@ h1, h2, h3, h4 {
     <div class="hero__grid" aria-hidden="true"></div>
 
     <div class="container hero__inner">
-      <p class="eyebrow reveal">ENGINEERING SEARCH AUTHORITY</p>
+      <p class="eyebrow reveal">A SEARCH VISIBILITY AGENCY</p>
       <h1 class="hero__title reveal">Built for Lasting Visibility.</h1>
       <p class="hero__lead reveal">Water Buffalo Media helps businesses become easier to find, understand, and trust across Google Search, Google Maps, and AI-generated answers. We build the technical foundation, content architecture, and digital authority required for sustainable search growth.</p>
       <div class="hero__actions reveal">

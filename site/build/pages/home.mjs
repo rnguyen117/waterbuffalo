@@ -16,7 +16,7 @@ export const schemas = [organizationSchema()];
 
 export const bodyHtml = `
 ${renderHero({
-  eyebrow: "ENGINEERING SEARCH AUTHORITY",
+  eyebrow: "A SEARCH VISIBILITY AGENCY",
   headline: "Built for Lasting Visibility.",
   body: "Water Buffalo Media helps businesses become easier to find, understand, and trust across Google Search, Google Maps, and AI-generated answers. We build the technical foundation, content architecture, and digital authority required for sustainable search growth.",
   secondaryLabel: "Explore Our Services",
