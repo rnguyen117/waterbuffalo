@@ -330,7 +330,7 @@ export function renderHeader(currentPath) {
 }
 
 function brandGlyph() {
-  return `<img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="44" height="30" aria-hidden="true">`;
+  return `<img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="52" height="36" aria-hidden="true">`;
 }
 
 // ---------------------------------------------------------------

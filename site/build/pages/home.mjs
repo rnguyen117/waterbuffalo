@@ -18,7 +18,7 @@ export const bodyHtml = `
 ${renderHero({
   eyebrow: "A MODERN SEARCH AGENCY",
   headline: "Built for Lasting Visibility.",
-  body: "Water Buffalo Media helps businesses become easier to find, understand, and trust across Google Search, Google Maps, and AI-generated answers. We build the technical foundation, content architecture, and digital authority required for sustainable search growth.",
+  body: "<span class=\"hero__lead-brand\">Water Buffalo Media</span> helps businesses become easier to find, understand, and trust across Google Search, Google Maps, and AI-generated answers. We build the technical foundation, content architecture, and digital authority required for sustainable search growth.",
   secondaryLabel: "Explore Our Services",
   secondaryHref: "services.html",
   showBuffalo: true,
@@ -88,7 +88,7 @@ ${renderMarquee([
 <section class="section section--dark philosophy">
   <img class="philosophy__mark" src="assets/buffalo-hero.png" alt="" aria-hidden="true" loading="lazy" width="798" height="884">
   <div class="container philosophy__inner">
-    <img class="philosophy__logo reveal" src="assets/logo-mark.png" alt="Water Buffalo Media" width="110" height="75" loading="lazy">
+    <img class="philosophy__logo reveal" src="assets/logo-mark.png" alt="Water Buffalo Media" width="130" height="89" loading="lazy">
     <p class="eyebrow reveal">Why the Water Buffalo</p>
     <h2 class="reveal">Strength Is Built Through Consistency.</h2>
     <p class="reveal">In Vietnamese culture, the water buffalo has long represented hard work, endurance, patience, and a close connection to community and the land.</p>
