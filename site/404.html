@@ -211,7 +211,7 @@ h1, h2, h3, h4 {
   color: var(--dark-text);
   margin-right: auto;
 }
-.brand__glyph { width: 28px; height: 28px; flex-shrink: 0; }
+.brand__glyph { width: 44px; height: auto; flex-shrink: 0; }
 .brand__word em { color: var(--accent-bright); font-style: normal; }
 
 .nav {
@@ -583,6 +583,7 @@ h1, h2, h3, h4 {
   pointer-events: none;
 }
 .philosophy__inner { max-width: 700px; position: relative; z-index: 1; }
+.philosophy__logo { display: block; width: 110px; height: auto; margin-bottom: 28px; }
 .philosophy__inner h2 { color: var(--dark-text); font-size: clamp(1.8rem, 3.4vw, 2.5rem); margin-bottom: 20px; }
 .philosophy__inner p { color: var(--dark-muted); font-size: 1.08rem; margin-bottom: 16px; }
 .philosophy__closing {
@@ -923,14 +924,7 @@ h1, h2, h3, h4 {
 <header class="site-header">
   <div class="container site-header__inner">
     <a class="brand" href="index.html" aria-label="Water Buffalo Media home">
-      <svg class="brand__glyph" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
-        <polygon points="32,6 54,16 58,32 50,46 32,58 14,46 6,32 10,16" fill="none" stroke="#2E6BFF" stroke-width="2"/>
-        <polygon points="32,16 44,22 46,32 40,42 32,48 24,42 18,32 20,22" fill="#12131a"/>
-        <polygon points="32,16 44,22 32,32" fill="#2E6BFF"/>
-        <polygon points="32,16 32,32 20,22" fill="#1c3b82"/>
-        <polygon points="32,32 46,32 40,42 32,48" fill="#1f4fc4"/>
-        <polygon points="32,32 32,48 24,42 18,32" fill="#182a52"/>
-      </svg>
+      <img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="44" height="30" aria-hidden="true">
       <span class="brand__word">Water Buffalo <em>Media</em></span>
     </a>
 
@@ -1010,14 +1004,7 @@ h1, h2, h3, h4 {
   <div class="container footer__top">
     <div class="footer__brand">
       <a class="brand" href="index.html">
-        <svg class="brand__glyph" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
-        <polygon points="32,6 54,16 58,32 50,46 32,58 14,46 6,32 10,16" fill="none" stroke="#2E6BFF" stroke-width="2"/>
-        <polygon points="32,16 44,22 46,32 40,42 32,48 24,42 18,32 20,22" fill="#12131a"/>
-        <polygon points="32,16 44,22 32,32" fill="#2E6BFF"/>
-        <polygon points="32,16 32,32 20,22" fill="#1c3b82"/>
-        <polygon points="32,32 46,32 40,42 32,48" fill="#1f4fc4"/>
-        <polygon points="32,32 32,48 24,42 18,32" fill="#182a52"/>
-      </svg>
+        <img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="44" height="30" aria-hidden="true">
         <span class="brand__word">Water Buffalo <em>Media</em></span>
       </a>
       <h2 class="footer__headline">Built for Lasting Visibility.</h2>

@@ -330,14 +330,7 @@ export function renderHeader(currentPath) {
 }
 
 function brandGlyph() {
-  return `<svg class="brand__glyph" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
-        <polygon points="32,6 54,16 58,32 50,46 32,58 14,46 6,32 10,16" fill="none" stroke="#2E6BFF" stroke-width="2"/>
-        <polygon points="32,16 44,22 46,32 40,42 32,48 24,42 18,32 20,22" fill="#12131a"/>
-        <polygon points="32,16 44,22 32,32" fill="#2E6BFF"/>
-        <polygon points="32,16 32,32 20,22" fill="#1c3b82"/>
-        <polygon points="32,32 46,32 40,42 32,48" fill="#1f4fc4"/>
-        <polygon points="32,32 32,48 24,42 18,32" fill="#182a52"/>
-      </svg>`;
+  return `<img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="44" height="30" aria-hidden="true">`;
 }
 
 // ---------------------------------------------------------------
