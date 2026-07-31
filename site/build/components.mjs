@@ -18,8 +18,157 @@ export const NAV_LINKS = [
       { label: "Technical SEO", href: "technical-seo.html" },
     ],
   },
+  {
+    label: "Industries",
+    href: "industries.html",
+    children: [
+      { label: "HVAC", href: "industries/hvac-marketing.html" },
+      { label: "Pest Control", href: "industries/pest-control-marketing.html" },
+      { label: "Bathroom Remodeling", href: "industries/bathroom-remodeling-marketing.html" },
+      { label: "Roofing & Siding", href: "industries/roofing-siding-marketing.html" },
+      { label: "Window Installation", href: "industries/window-installation-marketing.html" },
+      { label: "Plumbing", href: "industries/plumbing-marketing.html" },
+      { label: "Electrical", href: "industries/electrical-contractor-marketing.html" },
+      { label: "Kitchen Remodeling", href: "industries/kitchen-remodeling-marketing.html" },
+      { label: "Landscaping", href: "industries/landscaping-marketing.html" },
+      { label: "Painting", href: "industries/painting-contractor-marketing.html" },
+      { label: "Financial Services", href: "industries/financial-services-marketing.html" },
+      { label: "Legal Services", href: "industries/legal-services-marketing.html" },
+      { label: "Healthcare Providers", href: "industries/healthcare-provider-marketing.html" },
+      { label: "SaaS & Technology", href: "industries/saas-technology-marketing.html" },
+    ],
+  },
   { label: "About", href: "about.html" },
   { label: "Contact", href: "contact.html" },
+];
+
+export const INDUSTRIES = [
+  {
+    slug: "hvac-marketing",
+    href: "industries/hvac-marketing.html",
+    name: "HVAC",
+    title: "HVAC Marketing",
+    description:
+      "Search visibility built around seasonal demand, emergency repair searches, and year-round Google Maps presence.",
+    icon: "gear",
+  },
+  {
+    slug: "pest-control-marketing",
+    href: "industries/pest-control-marketing.html",
+    name: "Pest Control",
+    title: "Pest Control Marketing",
+    description:
+      "Capture high-intent, problem-driven searches with clear local visibility and trust signals for treatment services.",
+    icon: "discovered",
+  },
+  {
+    slug: "bathroom-remodeling-marketing",
+    href: "industries/bathroom-remodeling-marketing.html",
+    name: "Bathroom Remodeling",
+    title: "Bathroom Remodeling Marketing",
+    description:
+      "Support long research cycles with visual proof, service-specific pages, and durable local authority.",
+    icon: "understood",
+  },
+  {
+    slug: "roofing-siding-marketing",
+    href: "industries/roofing-siding-marketing.html",
+    name: "Roofing & Siding",
+    title: "Roofing & Siding Marketing",
+    description:
+      "Compete in dense local markets with clear service architecture for repair, replacement, and storm-driven demand.",
+    icon: "building",
+  },
+  {
+    slug: "window-installation-marketing",
+    href: "industries/window-installation-marketing.html",
+    name: "Window Installation",
+    title: "Window Installation Marketing",
+    description:
+      "Reach ready-to-buy homeowners comparing window types, installers, and estimates in your service area.",
+    icon: "compass",
+  },
+  {
+    slug: "plumbing-marketing",
+    href: "industries/plumbing-marketing.html",
+    name: "Plumbing",
+    title: "Plumbing Marketing",
+    description:
+      "Balance urgent emergency searches with planned service visibility across residential and commercial work.",
+    icon: "gear",
+  },
+  {
+    slug: "electrical-contractor-marketing",
+    href: "industries/electrical-contractor-marketing.html",
+    name: "Electrical",
+    title: "Electrical Contractor Marketing",
+    description:
+      "Build local demand around panel upgrades, EV chargers, and licensed electrical work customers can trust.",
+    icon: "spark",
+  },
+  {
+    slug: "kitchen-remodeling-marketing",
+    href: "industries/kitchen-remodeling-marketing.html",
+    name: "Kitchen Remodeling",
+    title: "Kitchen Remodeling Marketing",
+    description:
+      "Support high-value, considered projects with visual proof, clear budgets, and consultation-focused pages.",
+    icon: "building",
+  },
+  {
+    slug: "landscaping-marketing",
+    href: "industries/landscaping-marketing.html",
+    name: "Landscaping",
+    title: "Landscaping Marketing",
+    description:
+      "Grow visibility for both recurring maintenance and large seasonal installation and design projects.",
+    icon: "globe",
+  },
+  {
+    slug: "painting-contractor-marketing",
+    href: "industries/painting-contractor-marketing.html",
+    name: "Painting",
+    title: "Painting Contractor Marketing",
+    description:
+      "Turn seasonal and project-based search interest into estimate requests with clear service visibility.",
+    icon: "trusted",
+  },
+  {
+    slug: "financial-services-marketing",
+    href: "industries/financial-services-marketing.html",
+    name: "Financial Services",
+    title: "Financial Services Marketing",
+    description:
+      "Build national authority and local branch visibility for advisory, wealth management, and accounting firms.",
+    icon: "scale",
+  },
+  {
+    slug: "legal-services-marketing",
+    href: "industries/legal-services-marketing.html",
+    name: "Legal Services",
+    title: "Legal Services Marketing",
+    description:
+      "Compete for high-value practice area searches with authoritative content and strong local and national visibility.",
+    icon: "trusted",
+  },
+  {
+    slug: "healthcare-provider-marketing",
+    href: "industries/healthcare-provider-marketing.html",
+    name: "Healthcare Providers",
+    title: "Healthcare Provider Marketing",
+    description:
+      "Support patient research and appointment decisions with clear local visibility and credible service content.",
+    icon: "understood",
+  },
+  {
+    slug: "saas-technology-marketing",
+    href: "industries/saas-technology-marketing.html",
+    name: "SaaS & Technology",
+    title: "SaaS and Technology Marketing",
+    description:
+      "Build global and national search authority for software companies competing beyond any single location.",
+    icon: "code",
+  },
 ];
 
 export const SERVICES = [
@@ -180,6 +329,7 @@ export function renderHead({
   inlineCss = "",
 }) {
   const canonical = `${SITE_URL}${path}`;
+  const base = basePath(path);
   const schemaTags = schemas
     .map((s) => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
     .join("\n");
@@ -204,7 +354,7 @@ ${noindex ? '<meta name="robots" content="noindex, follow">' : ""}
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${SITE_URL}/assets/og-image.png">
 
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="${base}assets/favicon.svg" type="image/svg+xml">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -273,41 +423,58 @@ function normPath(p) {
   return p === "/" ? "index.html" : p.replace(/^\//, "");
 }
 
+// The site was flat (every page at site root) until the /industries/*
+// pages introduced one level of nesting. Header, footer, favicon, and
+// the main.js <script> tag all reference root-relative paths like
+// "contact.html" or "assets/...", which only resolve correctly from a
+// page actually sitting at the root. basePath() computes the "../"
+// prefix needed so those same root-relative values still resolve
+// correctly from a page nested one (or more) directories deep.
+function basePath(currentPath) {
+  const depth = normPath(currentPath).split("/").length - 1;
+  return depth > 0 ? "../".repeat(depth) : "";
+}
+
 export function renderHeader(currentPath) {
   const current = normPath(currentPath);
+  const base = basePath(currentPath);
   const isServicesGroup = SERVICES.some((s) => s.href === current) || current === "services.html";
+  const isIndustriesGroup = INDUSTRIES.some((s) => s.href === current) || current === "industries.html";
 
   const desktopLinks = NAV_LINKS.map((link) => {
-    const active = link.href === current || (link.children && isServicesGroup);
+    const groupActive = link.label === "Services" ? isServicesGroup : link.label === "Industries" ? isIndustriesGroup : false;
+    const active = link.href === current || (link.children && groupActive);
     if (link.children) {
+      const overviewLabel = link.label === "Industries" ? "Industries Overview" : "Services Overview";
       return `<details class="nav-dropdown">
         <summary class="${active ? "is-active" : ""}">${link.label}<svg class="nav-dropdown__chevron" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
         <div class="nav-dropdown__panel">
-          <a href="${link.href}">Services Overview</a>
-          ${link.children.map((c) => `<a href="${c.href}" class="${c.href === current ? "is-active" : ""}">${c.label}</a>`).join("\n")}
+          <a href="${base}${link.href}">${overviewLabel}</a>
+          ${link.children.map((c) => `<a href="${base}${c.href}" class="${c.href === current ? "is-active" : ""}">${c.label}</a>`).join("\n")}
         </div>
       </details>`;
     }
-    return `<a href="${link.href}" class="${active ? "is-active" : ""}">${link.label}</a>`;
+    return `<a href="${base}${link.href}" class="${active ? "is-active" : ""}">${link.label}</a>`;
   }).join("\n");
 
   const mobileLinks = NAV_LINKS.map((link) => {
     if (link.children) {
+      const overviewLabel = link.label === "Industries" ? "Industries Overview" : "Services Overview";
       return `<details class="mobile-nav__dropdown">
         <summary>${link.label}</summary>
         <div class="mobile-nav__dropdown-panel">
-          <a href="${link.href}">Services Overview</a>
-          ${link.children.map((c) => `<a href="${c.href}">${c.label}</a>`).join("\n")}
+          <a href="${base}${link.href}">${overviewLabel}</a>
+          ${link.children.map((c) => `<a href="${base}${c.href}">${c.label}</a>`).join("\n")}
         </div>
       </details>`;
     }
-    return `<a href="${link.href}">${link.label}</a>`;
+    return `<a href="${base}${link.href}">${link.label}</a>`;
   }).join("\n");
 
   return `<header class="site-header">
   <div class="container site-header__inner">
-    <a class="brand" href="index.html" aria-label="${SITE_NAME} home">
-      ${brandGlyph()}
+    <a class="brand" href="${base}index.html" aria-label="${SITE_NAME} home">
+      ${brandGlyph(base)}
       <span class="brand__word">Water Buffalo <em>Media</em></span>
     </a>
 
@@ -315,7 +482,7 @@ export function renderHeader(currentPath) {
       ${desktopLinks}
     </nav>
 
-    <a class="btn btn--primary btn--sm nav__cta" href="contact.html">${CTA_LABEL}</a>
+    <a class="btn btn--primary btn--sm nav__cta" href="${base}contact.html">${CTA_LABEL}</a>
 
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav">
       <span></span><span></span><span></span>
@@ -324,49 +491,61 @@ export function renderHeader(currentPath) {
 
   <div class="mobile-nav" id="mobile-nav" hidden>
     ${mobileLinks}
-    <a class="btn btn--primary" href="contact.html">${CTA_LABEL}</a>
+    <a class="btn btn--primary" href="${base}contact.html">${CTA_LABEL}</a>
   </div>
 </header>`;
 }
 
-function brandGlyph() {
-  return `<img class="brand__glyph" src="assets/logo-mark-icon.png" alt="" width="52" height="36" aria-hidden="true">`;
+function brandGlyph(base = "") {
+  return `<img class="brand__glyph" src="${base}assets/logo-mark-icon.png" alt="" width="52" height="36" aria-hidden="true">`;
 }
 
 // ---------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------
-export function renderFooter() {
+export function renderFooter(currentPath = "/") {
+  const base = basePath(currentPath);
   return `<footer class="site-footer">
   <div class="container footer__top">
     <div class="footer__brand">
-      <a class="brand" href="index.html">
-        ${brandGlyph()}
+      <a class="brand" href="${base}index.html">
+        ${brandGlyph(base)}
         <span class="brand__word">Water Buffalo <em>Media</em></span>
       </a>
       <h2 class="footer__headline">Built for Lasting Visibility.</h2>
       <p>Water Buffalo Media helps businesses build durable visibility across Google Search, Google Maps, and emerging AI search platforms. Our work is grounded in strong technical foundations, thoughtful strategy, and steady long-term progress.</p>
       <a class="footer__email" href="mailto:contact@waterbuffalomedia.com">contact@waterbuffalomedia.com</a>
-      <a class="btn btn--primary" href="contact.html">${CTA_LABEL}</a>
+      <a class="btn btn--primary" href="${base}contact.html">${CTA_LABEL}</a>
     </div>
 
     <nav class="footer__col" aria-label="Site">
       <h4>Site</h4>
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="services.html">Services</a>
-      <a href="contact.html">Contact</a>
-      <a href="privacy.html">Privacy Policy</a>
+      <a href="${base}index.html">Home</a>
+      <a href="${base}about.html">About</a>
+      <a href="${base}services.html">Services</a>
+      <a href="${base}contact.html">Contact</a>
+      <a href="${base}privacy.html">Privacy Policy</a>
     </nav>
 
     <nav class="footer__col" aria-label="Services">
       <h4>Services</h4>
-      <a href="local-seo.html">Local SEO</a>
-      <a href="national-seo.html">National SEO</a>
-      <a href="global-seo.html">Global SEO</a>
-      <a href="ai-search.html">Generative Engine Optimization</a>
-      <a href="google-business-profile.html">Google Business Profile Optimization</a>
-      <a href="technical-seo.html">Technical SEO</a>
+      <a href="${base}local-seo.html">Local SEO</a>
+      <a href="${base}national-seo.html">National SEO</a>
+      <a href="${base}global-seo.html">Global SEO</a>
+      <a href="${base}ai-search.html">Generative Engine Optimization</a>
+      <a href="${base}google-business-profile.html">Google Business Profile Optimization</a>
+      <a href="${base}technical-seo.html">Technical SEO</a>
+    </nav>
+
+    <nav class="footer__col" aria-label="Industries">
+      <h4>Industries</h4>
+      <a href="${base}industries/hvac-marketing.html">HVAC</a>
+      <a href="${base}industries/plumbing-marketing.html">Plumbing</a>
+      <a href="${base}industries/electrical-contractor-marketing.html">Electrical</a>
+      <a href="${base}industries/roofing-siding-marketing.html">Roofing & Siding</a>
+      <a href="${base}industries/kitchen-remodeling-marketing.html">Kitchen Remodeling</a>
+      <a href="${base}industries/landscaping-marketing.html">Landscaping</a>
+      <a href="${base}industries.html">View All Industries</a>
     </nav>
   </div>
 
@@ -460,6 +639,20 @@ export function renderServiceCard(service, { expanded = false } = {}) {
     <p>${esc(service.description)}</p>
     ${bullets}
     <a class="service-card__link" href="${service.href}">${esc(service.linkText)} <span aria-hidden="true">&rarr;</span></a>
+  </article>`;
+}
+
+// ---------------------------------------------------------------
+// Industry card — reuses the exact .card/.service-card visual
+// treatment (icon, heading, description, link) so the industries
+// hub grid looks like a native part of the existing design system.
+// ---------------------------------------------------------------
+export function renderIndustryCard(industry) {
+  return `<article class="card service-card reveal">
+    <span class="card__icon" aria-hidden="true">${svgIcon(industry.icon || "search")}</span>
+    <h3>${esc(industry.name)}</h3>
+    <p>${esc(industry.description)}</p>
+    <a class="service-card__link" href="${industry.href}">${esc(industry.title)} <span aria-hidden="true">&rarr;</span></a>
   </article>`;
 }
 
@@ -565,6 +758,7 @@ export { svgIcon, esc, CTA_LABEL };
 // Page shell
 // ---------------------------------------------------------------
 export function renderPage({ path, title, description, schemas = [], bodyHtml, noindex = false, inlineCss = "" }) {
+  const base = basePath(path);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -576,8 +770,8 @@ ${renderHeader(path)}
 <main id="main">
 ${bodyHtml}
 </main>
-${renderFooter()}
-<script src="js/main.js"></script>
+${renderFooter(path)}
+<script src="${base}js/main.js"></script>
 </body>
 </html>
 `;

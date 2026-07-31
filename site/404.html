@@ -598,7 +598,7 @@ h1, h2, h3, h4 {
 /* ---------------------------------------------------------------
    Services grid / cards
 --------------------------------------------------------------- */
-.services__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 48px; }
+.services__grid, .industries__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 48px; }
 
 .card {
   background: var(--white);
@@ -808,8 +808,8 @@ h1, h2, h3, h4 {
 .site-footer { background: var(--dark-bg); padding-top: 72px; }
 .footer__top {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
-  gap: 48px;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 0.8fr;
+  gap: 40px;
   padding-bottom: 56px;
   border-bottom: 1px solid var(--dark-border);
 }
@@ -861,7 +861,7 @@ h1, h2, h3, h4 {
    Responsive
 --------------------------------------------------------------- */
 @media (max-width: 1080px) {
-  .services__grid, .services__grid--expanded { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .services__grid, .services__grid--expanded, .industries__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feature-grid--cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .intro-section { grid-template-columns: 1fr; }
   .intro-section__statement { border-left: none; border-top: 3px solid var(--accent); padding-left: 0; padding-top: 20px; }
@@ -888,7 +888,7 @@ h1, h2, h3, h4 {
   .hero__actions { flex-direction: column; }
   .hero__actions .btn { width: 100%; }
   .section { padding: 64px 0; }
-  .services__grid, .services__grid--expanded, .feature-grid--cols-3, .feature-grid--cols-4 { grid-template-columns: 1fr; }
+  .services__grid, .services__grid--expanded, .industries__grid, .feature-grid--cols-3, .feature-grid--cols-4 { grid-template-columns: 1fr; }
   .checklist--cols-2 { grid-template-columns: 1fr; }
   .contact-form__grid { grid-template-columns: 1fr; }
   .footer__top { grid-template-columns: 1fr; gap: 36px; }
@@ -943,6 +943,26 @@ h1, h2, h3, h4 {
 <a href="technical-seo.html" class="">Technical SEO</a>
         </div>
       </details>
+<details class="nav-dropdown">
+        <summary class="">Industries<svg class="nav-dropdown__chevron" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <div class="nav-dropdown__panel">
+          <a href="industries.html">Industries Overview</a>
+          <a href="industries/hvac-marketing.html" class="">HVAC</a>
+<a href="industries/pest-control-marketing.html" class="">Pest Control</a>
+<a href="industries/bathroom-remodeling-marketing.html" class="">Bathroom Remodeling</a>
+<a href="industries/roofing-siding-marketing.html" class="">Roofing & Siding</a>
+<a href="industries/window-installation-marketing.html" class="">Window Installation</a>
+<a href="industries/plumbing-marketing.html" class="">Plumbing</a>
+<a href="industries/electrical-contractor-marketing.html" class="">Electrical</a>
+<a href="industries/kitchen-remodeling-marketing.html" class="">Kitchen Remodeling</a>
+<a href="industries/landscaping-marketing.html" class="">Landscaping</a>
+<a href="industries/painting-contractor-marketing.html" class="">Painting</a>
+<a href="industries/financial-services-marketing.html" class="">Financial Services</a>
+<a href="industries/legal-services-marketing.html" class="">Legal Services</a>
+<a href="industries/healthcare-provider-marketing.html" class="">Healthcare Providers</a>
+<a href="industries/saas-technology-marketing.html" class="">SaaS & Technology</a>
+        </div>
+      </details>
 <a href="about.html" class="">About</a>
 <a href="contact.html" class="">Contact</a>
     </nav>
@@ -966,6 +986,26 @@ h1, h2, h3, h4 {
 <a href="ai-search.html">AI Search</a>
 <a href="google-business-profile.html">Google Business Profile</a>
 <a href="technical-seo.html">Technical SEO</a>
+        </div>
+      </details>
+<details class="mobile-nav__dropdown">
+        <summary>Industries</summary>
+        <div class="mobile-nav__dropdown-panel">
+          <a href="industries.html">Industries Overview</a>
+          <a href="industries/hvac-marketing.html">HVAC</a>
+<a href="industries/pest-control-marketing.html">Pest Control</a>
+<a href="industries/bathroom-remodeling-marketing.html">Bathroom Remodeling</a>
+<a href="industries/roofing-siding-marketing.html">Roofing & Siding</a>
+<a href="industries/window-installation-marketing.html">Window Installation</a>
+<a href="industries/plumbing-marketing.html">Plumbing</a>
+<a href="industries/electrical-contractor-marketing.html">Electrical</a>
+<a href="industries/kitchen-remodeling-marketing.html">Kitchen Remodeling</a>
+<a href="industries/landscaping-marketing.html">Landscaping</a>
+<a href="industries/painting-contractor-marketing.html">Painting</a>
+<a href="industries/financial-services-marketing.html">Financial Services</a>
+<a href="industries/legal-services-marketing.html">Legal Services</a>
+<a href="industries/healthcare-provider-marketing.html">Healthcare Providers</a>
+<a href="industries/saas-technology-marketing.html">SaaS & Technology</a>
         </div>
       </details>
 <a href="about.html">About</a>
@@ -1031,6 +1071,17 @@ h1, h2, h3, h4 {
       <a href="ai-search.html">Generative Engine Optimization</a>
       <a href="google-business-profile.html">Google Business Profile Optimization</a>
       <a href="technical-seo.html">Technical SEO</a>
+    </nav>
+
+    <nav class="footer__col" aria-label="Industries">
+      <h4>Industries</h4>
+      <a href="industries/hvac-marketing.html">HVAC</a>
+      <a href="industries/plumbing-marketing.html">Plumbing</a>
+      <a href="industries/electrical-contractor-marketing.html">Electrical</a>
+      <a href="industries/roofing-siding-marketing.html">Roofing & Siding</a>
+      <a href="industries/kitchen-remodeling-marketing.html">Kitchen Remodeling</a>
+      <a href="industries/landscaping-marketing.html">Landscaping</a>
+      <a href="industries.html">View All Industries</a>
     </nav>
   </div>
 

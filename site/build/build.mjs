@@ -16,6 +16,22 @@ import * as contact from "./pages/contact.mjs";
 import * as privacy from "./pages/privacy.mjs";
 import * as notFound from "./pages/404.mjs";
 
+import * as industries from "./pages/industries.mjs";
+import * as hvac from "./pages/industries/hvac-marketing.mjs";
+import * as pestControl from "./pages/industries/pest-control-marketing.mjs";
+import * as bathroomRemodeling from "./pages/industries/bathroom-remodeling-marketing.mjs";
+import * as roofingSiding from "./pages/industries/roofing-siding-marketing.mjs";
+import * as windowInstallation from "./pages/industries/window-installation-marketing.mjs";
+import * as plumbing from "./pages/industries/plumbing-marketing.mjs";
+import * as electrical from "./pages/industries/electrical-contractor-marketing.mjs";
+import * as kitchenRemodeling from "./pages/industries/kitchen-remodeling-marketing.mjs";
+import * as landscaping from "./pages/industries/landscaping-marketing.mjs";
+import * as paintingContractor from "./pages/industries/painting-contractor-marketing.mjs";
+import * as financialServices from "./pages/industries/financial-services-marketing.mjs";
+import * as legalServices from "./pages/industries/legal-services-marketing.mjs";
+import * as healthcareProvider from "./pages/industries/healthcare-provider-marketing.mjs";
+import * as saasTechnology from "./pages/industries/saas-technology-marketing.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const siteRoot = join(__dirname, "..");
 
@@ -31,8 +47,27 @@ const pages = [
   about,
   contact,
   privacy,
+  industries,
+  hvac,
+  pestControl,
+  bathroomRemodeling,
+  roofingSiding,
+  windowInstallation,
+  plumbing,
+  electrical,
+  kitchenRemodeling,
+  landscaping,
+  paintingContractor,
+  financialServices,
+  legalServices,
+  healthcareProvider,
+  saasTechnology,
   notFound,
 ];
+
+// industries/* pages are the first pages to sit one directory deep —
+// the output folder needs to exist before we can write into it.
+mkdirSync(join(siteRoot, "industries"), { recursive: true });
 
 function outFileFor(path) {
   if (path === "/") return "index.html";
