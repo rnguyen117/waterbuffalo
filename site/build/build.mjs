@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { renderPage, SITE_URL } from "./components.mjs";
@@ -39,6 +39,13 @@ function outFileFor(path) {
   return path.replace(/^\//, "");
 }
 
+// Inlined directly into every page's <head> (as a <style> block) rather than
+// linked as an external stylesheet. This is a multi-page static site — every
+// navigation is a full document load — so an external CSS request is one more
+// round trip during which the page can paint unstyled (giant logo on a white
+// background) before it resolves. Inlining removes that request entirely.
+const cssContent = readFileSync(join(siteRoot, "css", "style.css"), "utf8");
+
 for (const page of pages) {
   const html = renderPage({
     path: page.path,
@@ -47,6 +54,7 @@ for (const page of pages) {
     schemas: page.schemas || [],
     bodyHtml: page.bodyHtml,
     noindex: page.noindex || false,
+    inlineCss: cssContent,
   });
   const outFile = join(siteRoot, outFileFor(page.path));
   writeFileSync(outFile, html);

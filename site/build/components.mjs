@@ -177,6 +177,7 @@ export function renderHead({
   schemas = [],
   ogType = "website",
   noindex = false,
+  inlineCss = "",
 }) {
   const canonical = `${SITE_URL}${path}`;
   const schemaTags = schemas
@@ -184,10 +185,11 @@ export function renderHead({
     .join("\n");
 
   return `<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#060708">
+<style>${inlineCss}</style>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0e1013">
 ${noindex ? '<meta name="robots" content="noindex, follow">' : ""}
 <link rel="canonical" href="${canonical}">
 
@@ -207,8 +209,6 @@ ${noindex ? '<meta name="robots" content="noindex, follow">' : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="css/style.css">
 ${schemaTags}`;
 }
 
@@ -559,11 +559,11 @@ export { svgIcon, esc, CTA_LABEL };
 // ---------------------------------------------------------------
 // Page shell
 // ---------------------------------------------------------------
-export function renderPage({ path, title, description, schemas = [], bodyHtml, noindex = false }) {
+export function renderPage({ path, title, description, schemas = [], bodyHtml, noindex = false, inlineCss = "" }) {
   return `<!doctype html>
 <html lang="en">
 <head>
-${renderHead({ title, description, path, schemas, noindex })}
+${renderHead({ title, description, path, schemas, noindex, inlineCss })}
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
