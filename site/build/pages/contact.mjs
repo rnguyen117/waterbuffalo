@@ -63,11 +63,11 @@ ${renderHero({
       <div class="contact-form__grid">
         <div class="field">
           <label for="fullName">Full Name</label>
-          <input id="fullName" name="fullName" type="text" autocomplete="name" required>
+          <input id="fullName" name="fullName" type="text" autocomplete="name">
         </div>
         <div class="field">
           <label for="companyName">Company Name</label>
-          <input id="companyName" name="companyName" type="text" autocomplete="organization" required>
+          <input id="companyName" name="companyName" type="text" autocomplete="organization">
         </div>
         <div class="field">
           <label for="email">Email Address</label>
@@ -79,11 +79,11 @@ ${renderHero({
         </div>
         <div class="field">
           <label for="website">Website URL</label>
-          <input id="website" name="website" type="url" placeholder="yourcompany.com" required>
+          <input id="website" name="website" type="url" placeholder="yourcompany.com">
         </div>
         <div class="field">
           <label for="service">Primary Service Needed</label>
-          <select id="service" name="service" required>
+          <select id="service" name="service">
             <option value="" disabled selected>Select one</option>
             <option>Local SEO</option>
             <option>National SEO</option>
@@ -105,7 +105,7 @@ ${renderHero({
         </div>
         <div class="field field--full">
           <label for="goal">What Are You Trying to Improve?</label>
-          <textarea id="goal" name="goal" rows="4" required></textarea>
+          <textarea id="goal" name="goal" rows="4"></textarea>
         </div>
       </div>
 
