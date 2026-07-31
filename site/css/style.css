@@ -341,8 +341,12 @@ h1, h2, h3, h4 {
   background: var(--dark-bg);
   padding: 96px 0 88px;
   isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - 145px);
+  min-height: calc(100svh - 145px);
 }
-.hero--compact { padding: 68px 0 64px; }
+.hero--compact { padding: 68px 0 64px; min-height: 0; display: block; }
 .hero--404 { padding: 120px 0; }
 
 .hero__glow {

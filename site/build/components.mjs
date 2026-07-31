@@ -164,7 +164,7 @@ function svgIcon(name) {
     code: '<polyline points="8 6 3 12 8 18"/><polyline points="16 6 21 12 16 18"/>',
     compass: '<circle cx="12" cy="12" r="9"/><polygon points="15 9 13.5 13.5 9 15 10.5 10.5 15 9"/>',
   };
-  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.check}</svg>`;
+  return `<svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.check}</svg>`;
 }
 
 // ---------------------------------------------------------------
@@ -281,7 +281,7 @@ export function renderHeader(currentPath) {
     const active = link.href === current || (link.children && isServicesGroup);
     if (link.children) {
       return `<details class="nav-dropdown">
-        <summary class="${active ? "is-active" : ""}">${link.label}<svg class="nav-dropdown__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+        <summary class="${active ? "is-active" : ""}">${link.label}<svg class="nav-dropdown__chevron" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
         <div class="nav-dropdown__panel">
           <a href="${link.href}">Services Overview</a>
           ${link.children.map((c) => `<a href="${c.href}" class="${c.href === current ? "is-active" : ""}">${c.label}</a>`).join("\n")}
@@ -330,7 +330,7 @@ export function renderHeader(currentPath) {
 }
 
 function brandGlyph() {
-  return `<svg class="brand__glyph" viewBox="0 0 64 64" aria-hidden="true">
+  return `<svg class="brand__glyph" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
         <polygon points="32,6 54,16 58,32 50,46 32,58 14,46 6,32 10,16" fill="none" stroke="#2E6BFF" stroke-width="2"/>
         <polygon points="32,16 44,22 46,32 40,42 32,48 24,42 18,32 20,22" fill="#12131a"/>
         <polygon points="32,16 44,22 32,32" fill="#2E6BFF"/>
@@ -481,7 +481,7 @@ export function renderFaq(items) {
         ${items
           .map(
             (it, i) => `<details class="faq__item reveal"${i === 0 ? " open" : ""}>
-          <summary>${esc(it.q)}<svg class="faq__chevron" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+          <summary>${esc(it.q)}<svg class="faq__chevron" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
           <p>${esc(it.a)}</p>
         </details>`
           )
