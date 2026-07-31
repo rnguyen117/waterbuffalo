@@ -274,19 +274,20 @@ h1, h2, h3, h4 {
   pointer-events: none;
 }
 
-.hero__photo {
+.hero__buffalo {
   position: absolute;
-  right: 0;
-  top: 0;
-  width: 520px;
+  right: -70px;
+  top: 46%;
+  transform: translateY(-46%);
+  width: clamp(500px, 45vw, 780px);
   height: auto;
-  opacity: 0.08;
   z-index: 0;
   pointer-events: none;
+  filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 50px rgba(62, 123, 255, 0.18));
 }
 
-@media (max-width: 900px) {
-  .hero__photo { display: none; }
+@media (max-width: 1080px) {
+  .hero__buffalo { display: none; }
 }
 
 .hero__inner { position: relative; z-index: 1; }
