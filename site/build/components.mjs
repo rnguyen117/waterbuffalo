@@ -1,7 +1,7 @@
 // Shared page components for the Water Buffalo Media static site.
 // Plain template-literal functions — no framework, no build dependency.
 
-export const SITE_URL = "https://waterbuffalomedia.com";
+export const SITE_URL = "https://www.waterbuffalomedia.com";
 export const SITE_NAME = "Water Buffalo Media";
 
 export const NAV_LINKS = [
