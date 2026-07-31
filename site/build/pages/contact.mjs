@@ -92,7 +92,10 @@ ${renderHero({
             <option>Google Business Profile Optimization</option>
             <option>Technical SEO</option>
             <option>Complete Search Strategy</option>
+            <option>Custom Package</option>
             <option>Not Sure Yet</option>
+            <option>Unsure</option>
+            <option>Other</option>
           </select>
         </div>
         <div class="field">
