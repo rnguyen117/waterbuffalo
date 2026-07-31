@@ -371,7 +371,8 @@ export function organizationSchema() {
     "@type": "Organization",
     "name": SITE_NAME,
     "url": SITE_URL,
-    "logo": `${SITE_URL}/assets/favicon.svg`,
+    "logo": `${SITE_URL}/assets/logo-mark.png`,
+    "email": "contact@waterbuffalomedia.com",
     "description":
       "Water Buffalo Media is a search visibility agency that engineers authority across Google Search, Google Maps, and AI-generated search experiences.",
     "sameAs": [],
@@ -399,7 +400,28 @@ export function breadcrumbSchema(trail) {
       "@type": "ListItem",
       "position": i + 1,
       "name": item.label,
-      "item": item.href ? `${SITE_URL}${item.href}` : undefined,
+      // Every breadcrumb parent link in this site points to a root-level
+      // page, so stripping any leading "../" segments (used from one-
+      // directory-deep pages like /industries/*) and prefixing SITE_URL
+      // reconstructs the correct absolute URL regardless of how deep the
+      // current page sits. Without this, SITE_URL was being concatenated
+      // directly onto the relative href (e.g. "index.html"), producing
+      // malformed URLs like "https://site.comindex.html".
+      "item": item.href ? `${SITE_URL}/${item.href.replace(/^(\.\.\/)+/, "")}` : undefined,
+    })),
+  };
+}
+
+export function itemListSchema(items, { name } = {}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    ...(name ? { name } : {}),
+    "itemListElement": items.map((it, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": it.name,
+      "url": `${SITE_URL}/${it.href}`,
     })),
   };
 }

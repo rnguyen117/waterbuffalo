@@ -5,6 +5,7 @@ import {
   renderCta,
   organizationSchema,
   breadcrumbSchema,
+  itemListSchema,
   INDUSTRIES,
 } from "../components.mjs";
 
@@ -15,7 +16,14 @@ export const description =
 
 const trail = [{ label: "Home", href: "index.html" }, { label: "Industries" }];
 
-export const schemas = [organizationSchema(), breadcrumbSchema(trail)];
+export const schemas = [
+  organizationSchema(),
+  breadcrumbSchema(trail),
+  itemListSchema(
+    INDUSTRIES.map((i) => ({ name: i.name, href: i.href })),
+    { name: "Industries We Serve" }
+  ),
+];
 
 export const bodyHtml = `
 ${renderBreadcrumbs(trail)}
