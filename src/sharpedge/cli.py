@@ -1,0 +1,320 @@
+"""Command line interface.
+
+    sharp-edge card                 build today's card
+    sharp-edge card --json out.json write it somewhere
+    sharp-edge init                 write a starter config
+    sharp-edge clv                  how you are doing against the close
+    sharp-edge calibrate            are the probabilities honest
+    sharp-edge simulate             what a day or a season looks like
+    sharp-edge devig -110 -110      inspect a market's true prices
+    sharp-edge kelly ...            size a single bet
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from . import config as config_module
+from . import pipeline, report
+from .market.movement import LineHistory
+from .models import BetStatus
+from .oddsmath import american_to_prob, devig, hold, prob_to_american, shin_z
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="sharp-edge",
+        description="Sports betting expected-value engine.",
+    )
+    parser.add_argument("-c", "--config", help="path to a TOML config file")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_card = sub.add_parser("card", help="build today's card")
+    p_card.add_argument("--json", help="write the card as JSON to this path")
+    p_card.add_argument("--markdown", help="write the card as Markdown to this path")
+    p_card.add_argument("-v", "--verbose", action="store_true")
+    p_card.add_argument("--log", action="store_true", help="record the bets in the ledger")
+    p_card.add_argument("--bankroll", type=float, help="override the configured bankroll")
+
+    sub.add_parser("init", help="write a starter config file").add_argument(
+        "path", nargs="?", default="sharp-edge.toml"
+    )
+
+    sub.add_parser("clv", help="closing line value report")
+    sub.add_parser("calibrate", help="check whether the probabilities are honest")
+    sub.add_parser("summary", help="ledger performance summary")
+
+    p_sim = sub.add_parser("simulate", help="simulate a season at a given edge")
+    p_sim.add_argument("--edge", type=float, default=0.02)
+    p_sim.add_argument("--bets-per-day", type=int, default=3)
+    p_sim.add_argument("--days", type=int, default=180)
+    p_sim.add_argument("--kelly", type=float, default=0.01)
+
+    p_devig = sub.add_parser("devig", help="remove vig from a set of prices")
+    p_devig.add_argument("prices", nargs="+", type=float, help="American odds")
+
+    p_kelly = sub.add_parser("kelly", help="size a single bet")
+    p_kelly.add_argument("probability", type=float, help="your win probability, 0-1")
+    p_kelly.add_argument("american", type=float, help="the price offered")
+    p_kelly.add_argument("--bankroll", type=float, default=10_000.0)
+    p_kelly.add_argument("--multiplier", type=float, default=0.25)
+
+    p_settle = sub.add_parser("settle", help="grade a bet in the ledger")
+    p_settle.add_argument("bet_id", type=int)
+    p_settle.add_argument("result", choices=["won", "lost", "pushed", "voided"])
+    p_settle.add_argument("--closing", type=float, help="closing American odds, for CLV")
+
+    args = parser.parse_args(argv)
+
+    try:
+        cfg = config_module.load(args.config) if args.config else config_module.Config()
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    handlers = {
+        "card": _cmd_card,
+        "init": _cmd_init,
+        "clv": _cmd_clv,
+        "calibrate": _cmd_calibrate,
+        "summary": _cmd_summary,
+        "simulate": _cmd_simulate,
+        "devig": _cmd_devig,
+        "kelly": _cmd_kelly,
+        "settle": _cmd_settle,
+    }
+    return handlers[args.command](args, cfg)
+
+
+# ---------------------------------------------------------------------------
+
+
+def _cmd_card(args, cfg) -> int:
+    if args.bankroll:
+        cfg.bankroll.starting = args.bankroll
+
+    try:
+        inputs = pipeline.fetch_inputs(cfg)
+    except Exception as exc:
+        print(f"error fetching data: {exc}", file=sys.stderr)
+        return 1
+
+    history = LineHistory(Path(cfg.data_dir) / "lines.db")
+    try:
+        result = pipeline.run(inputs, cfg, history=history)
+    finally:
+        history.close()
+
+    print(report.console(result, verbose=args.verbose))
+
+    if args.json:
+        Path(args.json).write_text(report.to_json(result))
+        print(f"\nwrote JSON to {args.json}")
+    if args.markdown:
+        Path(args.markdown).write_text(report.markdown(result))
+        print(f"wrote Markdown to {args.markdown}")
+
+    if args.log and result.bets:
+        from .track.ledger import Ledger
+
+        ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+        ids = ledger.record_slate(result.bets)
+        ledger.close()
+        print(f"logged {len(ids)} bets to the ledger (ids {ids[0]}-{ids[-1]})")
+
+    return 0
+
+
+def _cmd_init(args, cfg) -> int:
+    path = config_module.write_default(args.path)
+    print(f"wrote {path}")
+    print("Edit it, then run: sharp-edge -c", path, "card")
+    return 0
+
+
+def _cmd_clv(args, cfg) -> int:
+    from .track import clv as clv_module
+    from .track.ledger import Ledger
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        rep = clv_module.analyze(ledger)
+        summary = ledger.summary()
+    finally:
+        ledger.close()
+
+    print(rep.summary)
+    if rep.n:
+        print(f"Projected long-run ROI from this CLV: {rep.projected_roi:+.2%}")
+        print()
+        print(clv_module.diagnose(rep, summary["roi"]))
+        if rep.by_book:
+            print("\nBy book:")
+            for book, value in sorted(rep.by_book.items(), key=lambda kv: -kv[1]):
+                print(f"  {book:<14} {value:+.2%}")
+    return 0
+
+
+def _cmd_calibrate(args, cfg) -> int:
+    from .track import calibration
+    from .track.ledger import Ledger
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        rows = [r for r in ledger.settled() if r.status in ("won", "lost")]
+    finally:
+        ledger.close()
+
+    if not rows:
+        print("No settled bets yet. Grade some bets first with `sharp-edge settle`.")
+        return 0
+
+    predictions = [r.model_probability for r in rows]
+    outcomes = [1 if r.status == "won" else 0 for r in rows]
+    rep = calibration.analyze(predictions, outcomes)
+
+    print(f"{rep.n} settled bets")
+    print(f"Brier score       {rep.brier:.4f}   (0.25 = no skill)")
+    print(f"Log loss          {rep.log_loss:.4f}")
+    print(f"Calibration error {rep.expected_calibration_error:.4f}")
+    print(f"Overconfidence    {rep.overconfidence:.2f}x")
+    print(f"\n{rep.verdict}")
+
+    if rep.bins:
+        print("\nPredicted vs actual:")
+        for b in rep.bins:
+            print(f"  {b.label:<10} n={b.count:<5} predicted {b.predicted:.1%}  actual {b.actual:.1%}")
+
+    suggested = calibration.suggested_market_trust(rep, cfg.model.market_trust)
+    if abs(suggested - cfg.model.market_trust) > 0.01:
+        print(f"\nSuggested market_trust: {suggested:.2f} (currently {cfg.model.market_trust:.2f})")
+    return 0
+
+
+def _cmd_summary(args, cfg) -> int:
+    from .track.ledger import Ledger
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        s = ledger.summary()
+        by_book = ledger.by_dimension("book")
+    finally:
+        ledger.close()
+
+    if not s["bets"]:
+        print("No settled bets yet.")
+        return 0
+
+    print(f"Bets       {s['bets']:,}")
+    print(f"Staked     ${s['staked']:,.2f}")
+    print(f"Profit     ${s['profit']:,.2f}")
+    print(f"ROI        {s['roi']:+.2%}")
+    print(f"Win rate   {s['win_rate']:.1%}")
+    print(f"Expected   ${s['expected_profit']:,.2f}   (what the model projected)")
+    if s["clv_mean"] is not None:
+        print(f"CLV        {s['clv_mean']:+.2%}, beat the close {s['beat_close_rate']:.0%} of the time")
+
+    if by_book:
+        print("\nBy book:")
+        for book, stats in sorted(by_book.items(), key=lambda kv: -kv[1]["profit"]):
+            print(
+                f"  {book:<14} {stats['bets']:>4} bets  "
+                f"${stats['profit']:>9,.2f}  {stats['roi']:+.2%}"
+            )
+    return 0
+
+
+def _cmd_simulate(args, cfg) -> int:
+    from .backtest import simulate
+
+    result = simulate.simulate_season(
+        edge=args.edge,
+        bets_per_day=args.bets_per_day,
+        days=args.days,
+        bankroll=cfg.bankroll.starting,
+        kelly_fraction=args.kelly,
+    )
+    print(
+        f"Simulating {args.days} days, {args.bets_per_day} bets/day, "
+        f"{args.edge:.1%} edge, {args.kelly:.1%} of bankroll per bet:"
+    )
+    print()
+    print(result.summary(cfg.bankroll.starting))
+    print()
+    ruin = simulate.risk_of_drawdown(
+        args.edge, args.days * args.bets_per_day, args.kelly, threshold=0.20
+    )
+    print(f"Chance of seeing a 20% drawdown along the way: {ruin:.0%}")
+    print(
+        "\nA genuinely profitable approach still finishes negative a meaningful "
+        "share of the time. Size for the bad path, not the median one."
+    )
+    return 0
+
+
+def _cmd_devig(args, cfg) -> int:
+    raw = [american_to_prob(a) for a in args.prices]
+    print(f"Raw implied:  {' '.join(f'{p:.4f}' for p in raw)}")
+    print(f"Overround:    {sum(raw) - 1:.4f}")
+    print(f"Hold:         {hold(raw):.3%}")
+    print(f"Shin z:       {shin_z(raw):.4f}   (implied insider share)")
+    print()
+    for method in ("multiplicative", "additive", "power", "shin"):
+        fair = devig(raw, method=method)
+        prices = "  ".join(f"{prob_to_american(p):+7.0f}" for p in fair)
+        probs = "  ".join(f"{p:.4f}" for p in fair)
+        print(f"  {method:<16} {probs}   ->  {prices}")
+    print()
+    print("Where the methods disagree most is where a naive screen invents edges.")
+    return 0
+
+
+def _cmd_kelly(args, cfg) -> int:
+    from .pricing.ev import expected_value, break_even_probability
+    from .pricing.kelly import kelly_fraction, risk_of_ruin
+
+    p, a = args.probability, args.american
+    if not 0 < p < 1:
+        print("probability must be between 0 and 1", file=sys.stderr)
+        return 1
+
+    full = kelly_fraction(p, a)
+    fractional = full * args.multiplier
+    ev = expected_value(p, a)
+
+    print(f"Price {a:+.0f}  |  break-even {break_even_probability(a):.2%}  |  your {p:.2%}")
+    print(f"Edge          {p - break_even_probability(a):+.2%}")
+    print(f"EV            {ev:+.2%} per unit staked")
+    if full <= 0:
+        print("\nNo edge here. Kelly says do not bet.")
+        return 0
+    print(f"Full Kelly    {full:.2%} of bankroll  (${args.bankroll * full:,.0f})")
+    print(
+        f"At {args.multiplier:g}x       {fractional:.2%} of bankroll  "
+        f"(${args.bankroll * fractional:,.0f})   <- use this"
+    )
+    print(f"\nRisk of a 50% drawdown at full Kelly: {risk_of_ruin(p, full):.1%}")
+    print(f"                       at {args.multiplier:g} Kelly: {risk_of_ruin(p, fractional):.1%}")
+    return 0
+
+
+def _cmd_settle(args, cfg) -> int:
+    from .track.ledger import Ledger
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        profit = ledger.settle(args.bet_id, BetStatus(args.result), args.closing)
+    except KeyError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        ledger.close()
+
+    print(f"bet {args.bet_id} settled {args.result}: {profit:+,.2f}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

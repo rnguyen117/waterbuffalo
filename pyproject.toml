@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sharp-edge"
+version = "0.1.0"
+description = "Sports betting EV engine: sharp consensus pricing, line shopping, news signals, and Kelly staking"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+# The core runs on the standard library alone, on purpose: the math should
+# never be blocked on an install, and the tests should always be runnable.
+dependencies = []
+
+[project.optional-dependencies]
+live = ["requests>=2.31"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+sharp-edge = "sharpedge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

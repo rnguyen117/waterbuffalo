@@ -1,0 +1,52 @@
+# sharp-edge configuration
+#
+# Every value here has a sane default; delete anything you do not want to
+# override. Start with the demo provider to see the pipeline run, then switch
+# to a real odds feed once you have a key.
+
+data_dir = "data"
+
+[bankroll]
+starting = 10000.0
+# Fraction of full Kelly. 0.25 is the recommended ceiling for anyone who is
+# not certain their probabilities are calibrated -- and if you were certain,
+# you would not be.
+kelly_multiplier = 0.25
+max_bet_fraction = 0.03
+min_stake = 5.0
+round_stakes_to = 1.0
+drawdown_scaling = true
+
+[model]
+devig_method = "shin"
+# How far the model is allowed to disagree with the market. Lower is safer.
+market_trust = 0.60
+ev_confidence = 0.75
+require_robust_devig = true
+apply_selection_penalty = true
+min_books_for_consensus = 3
+
+[filters]
+min_ev = 0.01
+min_ev_lower = 0.0
+max_hold = 0.07
+min_books = 3
+max_hours_to_start = 96.0
+
+[sources]
+provider = "demo"          # "demo" or "theoddsapi"
+# api_key = ""             # or set ODDS_API_KEY in the environment
+sports = ["nfl", "nba"]
+regions = ["us", "us2", "eu"]
+markets = ["h2h", "spreads", "totals"]
+
+[accounts]
+# Books you hold funded accounts with. Leave empty to consider all of them.
+books = ["draftkings", "fanduel", "betmgm", "caesars", "espnbet", "circa"]
+
+[portfolio]
+max_total_exposure = 0.12
+max_per_game = 0.05
+max_per_bet = 0.03
+max_bets = 15
+risk_aversion = 1.0
