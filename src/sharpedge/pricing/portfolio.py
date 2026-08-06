@@ -250,11 +250,9 @@ def drop_conflicting_sides(candidates: list[BetCandidate]) -> list[BetCandidate]
     the other is generous; discarding both is more honest, and that is what
     happens here when the two are close.
     """
-    by_market: dict[tuple[str, object], list[BetCandidate]] = {}
+    by_market: dict[tuple, list[BetCandidate]] = {}
     for candidate in candidates:
-        by_market.setdefault(
-            (candidate.event.event_id, candidate.market_type), []
-        ).append(candidate)
+        by_market.setdefault(candidate.market_key(), []).append(candidate)
 
     kept: list[BetCandidate] = []
     for group in by_market.values():

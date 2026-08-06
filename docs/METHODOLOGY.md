@@ -336,3 +336,196 @@ The approaches here draw on standard results in the field:
 - Wolfers & Zitzewitz (2004) — prediction markets as forecasts
 - The extensive literature on closing line efficiency and the
   favorite-longshot bias
+
+---
+
+## 9. Props, derivatives, and market efficiency
+
+Everything above concerns sides and totals. Those are the hardest markets in
+sports betting, and a system restricted to them is competing where the
+competition is strongest.
+
+Market efficiency is not uniform, and the variation is structural rather than
+random. It comes down to four things a book allocates unevenly:
+
+1. **Analyst attention.** A pricing desk has a handful of people. They price
+   the NFL sides by hand and let a model handle 4,000 player props.
+2. **Limit size.** A number a book will take $25,000 on has been attacked by
+   everyone who wanted to attack it. A $250 prop has not.
+3. **Sharp participation.** Syndicates bet sides because that is where the
+   capacity is. Almost nobody with an edge is grinding tackles props for $250
+   a shot, so those errors are never corrected.
+4. **Correction speed.** A side moves within seconds of news. The related
+   props move in minutes, or when someone notices.
+
+That gives the efficiency ladder encoded in `market/taxonomy.py`, and it drives
+two behaviors: how far the model may disagree with the market (`market_trust`),
+and how large an edge it must find before betting (`min_edge_required`).
+
+**The counterweight is limits, and it is not small.** An 11% edge on a $250
+prop is $27. A 3% edge on a $5,000 side is $150. The ranking scores realizable
+size explicitly so the card does not fill with percentage edges that cannot be
+converted into money.
+
+### Distributions, and why the family matters
+
+A prop is a threshold question about a distribution, so the family has to be
+right:
+
+| Family | Stats | Why |
+|---|---|---|
+| Negative binomial | strikeouts, receptions, rebounds, assists | Overdispersed: variance runs 1.2–1.4× the mean |
+| Poisson | home runs, touchdowns, goals, steals | Genuinely rare and independent |
+| Gamma | passing, rushing, receiving yards | Non-negative and right-skewed |
+| Normal | NBA points, outs recorded | High-volume and near-symmetric |
+
+Using Poisson where negative binomial belongs is the most common and most
+expensive mistake, because Poisson forces variance to equal the mean and so
+understates both tails. Alternate lines are tail bets, which is exactly where
+that error is largest:
+
+```
+Projection 6.87 strikeouts, P(over 9.5):
+  Poisson            15.67%   =  +538
+  Negative binomial  18.58%   =  +438
+```
+
+A book generating alternates from a Poisson offers +538 on something worth
++438. That is a 6.6% edge with no forecasting involved.
+
+### Fitting: jointly, never to a single anchor
+
+The obvious approach — fit to the main line, extrapolate outward — is subtly
+broken, and the failure is silent. Recovering one probability requires
+removing vig, and no devig method is exactly right. A small anchor error
+compounds as you move away from it:
+
+```
+Anchor devigged 1.3 points low at the 7.5 line
+  -> fitted projection 6.29 instead of 6.40
+  -> P(over 4.5) off by 1.2 points, three rungs out
+  -> a phantom 10% "edge" on a correctly priced ladder
+```
+
+This was a real bug during development, caught by feeding the engine a ladder
+priced perfectly from a single distribution and finding twelve mispricings
+that did not exist.
+
+Fitting jointly fixes it. Every rung is devigged the same way, and the
+projection is chosen to minimize squared error in log-odds across all of them.
+A systematic devig bias shifts every rung in the same direction and cancels
+out of the residuals; what survives is genuine internal disagreement.
+
+The regression test is permanent: **a coherently priced ladder must yield zero
+findings**, at every hold from 4% to 12% and every projection.
+
+### Guards specific to props
+
+- **Tail floor (3%).** A fitted 0.3% probability is extrapolation, not
+  estimation. Those rungs are declined rather than bet.
+- **Distance haircut.** Confidence decays with distance from the ladder's
+  center, and the adjustment is one-directional — it can only make a bet look
+  worse, never better, so it cannot manufacture an edge.
+- **Push credit.** Whole-number prop lines refund rather than lose. Pricing a
+  push as a loss materially undervalues the over.
+- **Maximum EV (35%).** In a live, correctly parsed market, an edge beyond
+  this is a stale quote, a feed error, or a misidentified market. All three
+  lose money; none is a bet.
+
+### Public money, where it actually pays
+
+Prop handle is overwhelmingly recreational, and recreational bettors bet overs
+— they buy a player to *do* something. The ticket splits are extreme:
+
+| Prop | Over share |
+|---|---:|
+| Anytime touchdown | 88% |
+| Home run | 86% |
+| Passing TDs | 78% |
+| Points | 74% |
+| Strikeouts | 72% |
+| Goalie saves | 58% (the exception — unders are popular here) |
+
+Books shade accordingly. The difference from sides is decisive: a shaded
+spread gets corrected by sharp money within hours, while a shaded prop is
+corrected by nobody and the premium survives to settlement.
+
+The shading is applied **once**, in the signal layer. Applying it in both the
+consensus and the signal was another real bug during development — it
+double-counted and produced cards consisting entirely of unders.
+
+### Prop-specific signals
+
+**Usage redistribution** is the most valuable. When a starter sits, the side
+moves in seconds and the teammates' props move slowly or not at all — yet
+their true values have changed a great deal. Basketball has fixed minutes and
+fixed shots; a 29%-usage player's absence redistributes to whoever shares his
+role, roughly 42% of it to his position-mate.
+
+Stats differ in how much they respond: assists move most (1.30×) because
+playmaking concentrates, blocks and steals barely at all (0.30×).
+
+**Blowout risk** is the counterweight nobody prices. Books set props off
+season averages that include close games, but starters sit in the fourth
+quarter of a 20-point game. The effect is asymmetric: a heavy favorite's stars
+get pulled, while a heavy underdog's pass-catchers see *more* volume because
+the team throws to catch up.
+
+**Workload limits** are the clearest hard cap in the package. A pitcher who
+will not go past the fifth inning has essentially no path to nine strikeouts,
+yet his alternate overs are priced from an unconstrained distribution.
+
+---
+
+## 10. Ranking a fixed-size card
+
+"The ten most probable bets" contains a trap worth naming.
+
+**The highest-probability bet on any board is a -3000 favorite at 96.8%.** It
+is also nearly the worst price available: risk $30 to win $1, and one loss
+erases thirty wins. Sort by probability and you get chalk that loses money
+slowly and reliably — the product every parlay-of-favorites tout sells.
+
+Sorting purely by EV fails in the opposite direction, selecting the thinnest
+and highest-variance markets, where a 12% edge is usually a modeling error.
+
+The default composite weights five things:
+
+| Component | Weight | Rationale |
+|---|---:|---|
+| Edge quality | 34% | EV at its lower confidence bound, compressed so outliers do not dominate |
+| Hit probability | 22% | Shaped, not raw: full credit in the 45–70% band, penalties for heavy chalk and deep longshots |
+| Evidence | 22% | Book count, market-maker participation, agreement |
+| Verifiability | 14% | A stale line is checkable now; a situational read is not |
+| Realizable size | 8% | An edge you can only get $250 down on is worth less |
+
+Every mode remains selectable — `--rank probability` does exactly what it says
+— so the trade-off is made with the numbers visible rather than hidden.
+
+### Two kinds of diversification
+
+`max_per_game` limits **outcome** correlation: four bets on one game is one
+opinion expressed four times.
+
+`max_per_market_type` limits **model** correlation, which is subtler and more
+dangerous. Every prop on a card is priced through the same distribution
+assumptions and the same ladder fit. If that machinery is wrong, it is wrong
+on all of them at once, and the card's real variance far exceeds what its
+correlation matrix suggests, because the errors share a cause. Spreading
+across market types hedges the modeling, not just the games.
+
+When filling a fixed card size requires relaxing these caps, the report says
+so rather than padding silently.
+
+### Setting expectations
+
+The card reports its own expected record and the distribution of outcomes:
+
+```
+Expected record 5.1-4.9  |  average win probability 50.5%
+5+ of 10 winning: 64%    7+ of 10: 18%    9+ of 10: 1%
+```
+
+Going 4-6 on ten 55% bets is an ordinary night. Publishing that in advance is
+the difference between a bettor who abandons a working process during normal
+variance and one who does not.

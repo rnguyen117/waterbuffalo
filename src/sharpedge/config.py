@@ -48,12 +48,35 @@ class ModelConfig:
 class FilterConfig:
     min_ev: float = 0.01              # 1% EV floor on the point estimate
     min_ev_lower: float = 0.0         # must clear zero at the lower bound
+    # Upper sanity bound. In a live, correctly-parsed market an edge beyond
+    # this is not an opportunity -- it is a stale quote, a feed error, or a
+    # market we have misidentified. Acting on it is how automated bettors fire
+    # at prices that do not exist. Raise it only when you know why.
+    max_ev: float = 0.35
     max_hold: float = 0.07            # skip markets juiced beyond this
     min_books: int = 3
     max_hours_to_start: float = 96.0
     min_hours_to_start: float = 0.0
     exclude_markets: list[str] = field(default_factory=list)
     exclude_leagues: list[str] = field(default_factory=list)
+    # How many bets the daily card should contain. The engine ranks every
+    # qualifying bet across every market and cuts to this number.
+    card_size: int = 10
+    # "value" (composite, default), "probability", "edge", "confidence", "kelly".
+    # Ranking purely by probability selects heavy favorites with poor prices --
+    # see docs/METHODOLOGY.md before changing this.
+    rank_mode: str = "value"
+    # Floor on win probability for a bet to make the card at all.
+    min_probability: float = 0.0
+    # Cap on how many bets from a single game may occupy the card.
+    max_per_game: int = 2
+    # Cap per market type. Hedges model risk rather than outcome risk: every
+    # prop on a card shares the same distribution assumptions, so if that
+    # machinery is wrong it is wrong on all of them at once.
+    max_per_market_type: int = 6
+    # Include player props and derivative markets in the scan.
+    include_props: bool = True
+    include_derivatives: bool = True
 
 
 @dataclass

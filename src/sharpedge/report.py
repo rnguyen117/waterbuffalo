@@ -56,6 +56,43 @@ def console(result: SlateResult, verbose: bool = False) -> str:
         f"  Expected profit ${result.expected_profit:,.2f} "
         f"({result.expected_roi:+.2%} on turnover)"
     )
+
+    stats = result.card_stats or {}
+    if stats:
+        record = stats.get("expected_record")
+        if record:
+            wins, losses = record
+            add(
+                f"  Expected record {wins:.1f}-{losses:.1f}   |   "
+                f"average win probability {stats.get('mean_probability', 0):.1%}"
+            )
+        mix = stats.get("markets") or {}
+        if mix:
+            pretty = ", ".join(
+                f"{count} {name.replace('_', ' ')}"
+                for name, count in sorted(mix.items(), key=lambda kv: -kv[1])
+            )
+            add(f"  Market mix: {pretty}")
+        backfilled = stats.get("backfilled") or 0
+        if backfilled:
+            add(
+                f"  NOTE: {backfilled} of these were added by relaxing the "
+                "diversification caps to reach the requested card size."
+            )
+            add(
+                "        They are correlated with bets already on the card, or "
+                "share their"
+            )
+            add(
+                "        modeling assumptions. A shorter card would carry less "
+                "hidden risk."
+            )
+        share = stats.get("verifiable_share")
+        if share is not None:
+            add(
+                f"  {share:.0%} rest on a premise checkable before kickoff "
+                "(stale line, ladder inconsistency, public shading)"
+            )
     add("")
 
     for tier in (Confidence.A, Confidence.B, Confidence.C):
@@ -92,6 +129,25 @@ def console(result: SlateResult, verbose: bool = False) -> str:
             add(f"  [{opp.kind}] {opp.event.name} {opp.market_type.value}")
             add(f"     {opp.description}")
             add(f"     {opp.profit_pct:+.2%}  -  {opp.note}")
+
+    if result.ranked:
+        from .ranking import probability_of_winning_at_least
+
+        staked = {id(b) for b in result.bets}
+        scored = [s for s in result.ranked if id(s.bet) in staked]
+        if scored:
+            n = len(scored)
+            add("")
+            add("-" * 78)
+            add("  WHAT A NORMAL NIGHT LOOKS LIKE")
+            add("-" * 78)
+            for k in (n // 2, int(n * 0.6) + 1, n - 1):
+                if 0 < k <= n:
+                    p = probability_of_winning_at_least(scored, k)
+                    add(f"  {k}+ of {n} winning: {p:.0%}")
+            add("")
+            add("  Going 4-6 on a card like this is an ordinary outcome, not a")
+            add("  broken model. Judge the process on closing line value.")
 
     add("")
     add("=" * 78)
@@ -179,6 +235,8 @@ def to_json(result: SlateResult) -> str:
                 "league": b.event.league,
                 "start_time": b.event.start_time.isoformat(),
                 "market": b.market_type.value,
+                "subject": b.subject,
+                "stat": b.stat,
                 "outcome": b.outcome,
                 "line": b.line,
                 "book": b.book,
@@ -220,6 +278,10 @@ def to_json(result: SlateResult) -> str:
             }
             for o in result.opportunities
         ],
+        "card_stats": {
+            k: (list(v) if isinstance(v, tuple) else v)
+            for k, v in (result.card_stats or {}).items()
+        },
         "skipped": [{"what": w, "why": r} for w, r in result.skipped],
     }
     return json.dumps(payload, indent=2)

@@ -204,8 +204,18 @@ class SignalEngine:
     def register(self, signal: Signal) -> None:
         self.signals.append(signal)
 
-    def evaluate(self, ctx: SignalContext) -> tuple[float, list[SignalContribution]]:
-        """Return ``(model_probability, contributions)``."""
+    def evaluate(
+        self, ctx: SignalContext, market_trust: float | None = None
+    ) -> tuple[float, list[SignalContribution]]:
+        """Return ``(model_probability, contributions)``.
+
+        ``market_trust`` may be overridden per market. This matters a great
+        deal: an NFL spread deserves near-total deference because it has been
+        attacked by every syndicate in the world, while a tackles prop at a
+        $500 limit has been priced by a machine and reviewed by nobody. Using
+        one trust level for both either handcuffs the model on props or lets
+        it run wild on sides.
+        """
         contributions: list[SignalContribution] = []
         for signal in self.signals:
             try:
@@ -220,8 +230,9 @@ class SignalEngine:
                     )
                 )
 
+        trust = self.market_trust if market_trust is None else market_trust
         raw = sum(c.effective for c in contributions)
-        shrunk = raw * (1.0 - self.market_trust)
+        shrunk = raw * (1.0 - trust)
         bounded = clamp(shrunk, -self.max_total_logit, self.max_total_logit)
 
         p = ctx.market_probability

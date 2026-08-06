@@ -166,6 +166,35 @@ def outlier_discount(best_decimal: float, median_decimal: float) -> float:
     return min((ratio - 1.03) * 1.4, 0.45)
 
 
+def implausible_edge(
+    fair_probability: float, american: float, max_logit_gap: float = 1.30
+) -> tuple[bool, str]:
+    """Reject edges too large to be real.
+
+    A price implying 10% when the fair value is 45% is not a gift, it is one
+    of three things: a stale quote that will be voided, a feed error, or a
+    market you have misidentified (a different line, a different player, a
+    first-half number filed as a full-game one). All three lose money or waste
+    time, and none of them is a bet.
+
+    Real edges at a live, correctly-parsed market run from a fraction of a
+    percent to a few percent. Anything implying a 4:1 disagreement with the
+    market is a data-quality alert, and treating it as an opportunity is how
+    an automated bettor ends up firing at prices that do not exist.
+
+    ``max_logit_gap`` of 1.30 is roughly a 3.7x odds discrepancy.
+    """
+    implied = decimal_to_prob(american_to_decimal(american))
+    gap = logit(fair_probability) - logit(implied)
+    if gap > max_logit_gap:
+        return True, (
+            f"price implies {implied:.1%} against a fair estimate of "
+            f"{fair_probability:.1%} -- too large to be a real edge, treating "
+            "it as a stale quote or a parsing error"
+        )
+    return False, ""
+
+
 def required_win_rate(american: float, target_roi: float) -> float:
     """Win rate needed to achieve a target ROI at a given price.
 

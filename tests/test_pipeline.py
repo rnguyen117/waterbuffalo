@@ -71,10 +71,13 @@ class TestFullPipeline:
 
     def test_finds_the_planted_stale_lines(self, tmp_path):
         # The demo generator deliberately leaves some soft books behind the
-        # market. Those are the edges the pipeline is supposed to find, and
-        # if it finds nothing the screen is broken rather than disciplined.
+        # market. With props disabled the card is core markets only, so the
+        # stale lines are what should surface. If nothing does, the screen is
+        # broken rather than disciplined.
         cfg = Config()
         cfg.data_dir = str(tmp_path)
+        cfg.filters.include_props = False
+        cfg.filters.include_derivatives = False
         inputs = pipeline.fetch_inputs(cfg)
         result = pipeline.run(inputs, cfg)
         assert result.bets, "pipeline found no bets on a slate with planted edges"
@@ -109,7 +112,9 @@ class TestFullPipeline:
         result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
         seen = set()
         for bet in result.bets:
-            key = (bet.event.event_id, bet.market_type)
+            # market_key carries the prop subject and line, so two players'
+            # props are not mistaken for two sides of one market.
+            key = bet.market_key()
             assert key not in seen, "recommended both sides of the same market"
             seen.add(key)
 

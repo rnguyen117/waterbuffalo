@@ -22,16 +22,81 @@ def utcnow() -> datetime:
 
 
 class MarketType(str, Enum):
-    """The market a price belongs to."""
+    """Every market the engine knows how to price.
 
+    Ordered roughly by how efficiently the market prices them. The game
+    markets at the top are the most heavily bet and hardest to beat; the
+    props and derivatives further down are priced by smaller teams, defended
+    with smaller limits, and corrected by far fewer sharp bettors -- which is
+    where the exploitable pricing errors concentrate.
+    """
+
+    # -- Core game markets: efficient, high limits, hard to beat -----------
     MONEYLINE = "moneyline"
     SPREAD = "spread"
     TOTAL = "total"
     TEAM_TOTAL = "team_total"
-    PLAYER_PROP = "player_prop"
     ALTERNATE_SPREAD = "alternate_spread"
     ALTERNATE_TOTAL = "alternate_total"
+
+    # -- Derivatives: priced off the full game, often mechanically --------
     FIRST_HALF = "first_half"
+    SECOND_HALF = "second_half"
+    FIRST_QUARTER = "first_quarter"
+    QUARTER = "quarter"
+    FIRST_PERIOD = "first_period"
+    FIRST_FIVE = "first_five"          # MLB, first five innings
+    FIRST_HALF_SPREAD = "first_half_spread"
+    FIRST_HALF_TOTAL = "first_half_total"
+
+    # -- Player props: the softest markets in the book --------------------
+    PLAYER_PROP = "player_prop"
+    ALTERNATE_PLAYER_PROP = "alternate_player_prop"
+
+    # -- Game props and exotics -------------------------------------------
+    GAME_PROP = "game_prop"
+    RACE_TO = "race_to"
+    BOTH_TEAMS_SCORE = "both_teams_score"
+    MARGIN_BUCKET = "margin_bucket"
+    FIRST_SCORE = "first_score"
+
+    @property
+    def is_prop(self) -> bool:
+        return self in (
+            MarketType.PLAYER_PROP,
+            MarketType.ALTERNATE_PLAYER_PROP,
+            MarketType.GAME_PROP,
+        )
+
+    @property
+    def is_derivative(self) -> bool:
+        return self in (
+            MarketType.FIRST_HALF,
+            MarketType.SECOND_HALF,
+            MarketType.FIRST_QUARTER,
+            MarketType.QUARTER,
+            MarketType.FIRST_PERIOD,
+            MarketType.FIRST_FIVE,
+            MarketType.FIRST_HALF_SPREAD,
+            MarketType.FIRST_HALF_TOTAL,
+        )
+
+    @property
+    def is_core(self) -> bool:
+        return self in (
+            MarketType.MONEYLINE,
+            MarketType.SPREAD,
+            MarketType.TOTAL,
+        )
+
+    @property
+    def has_line(self) -> bool:
+        """Whether prices in this market are attached to a number."""
+        return self not in (
+            MarketType.MONEYLINE,
+            MarketType.BOTH_TEAMS_SCORE,
+            MarketType.FIRST_SCORE,
+        )
 
 
 class BookTier(str, Enum):
@@ -127,6 +192,13 @@ class Market:
     prices: list[Price] = field(default_factory=list)
     # Player prop markets carry the subject so signals can match on them.
     subject: str | None = None
+    # Free-form market detail. Props use ``stat`` (e.g. "strikeouts") and
+    # ``position``; derivatives use ``period``.
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def stat(self) -> str | None:
+        return self.metadata.get("stat")
 
     def prices_for(self, outcome: str) -> list[Price]:
         return [p for p in self.prices if p.outcome == outcome]
@@ -275,6 +347,12 @@ class BetCandidate:
     deep_link: str | None = None
     # Worst-case devig probability, used as the pessimistic screen.
     conservative_probability: float | None = None
+    # Player props need the subject and stat to be identified at all: two
+    # players' "Over" on the same game are entirely different bets, and
+    # without these they collide in dedup, conflict detection, and
+    # correlation.
+    subject: str | None = None
+    stat: str | None = None
 
     @property
     def decimal(self) -> float:
@@ -312,16 +390,50 @@ class BetCandidate:
 
     @property
     def description(self) -> str:
+        if self.subject and self.stat:
+            return (
+                f"{self.subject} {self.stat.replace('_', ' ')} {self.outcome} "
+                f"{self.line:g} ({self.american:+.0f}) @ {self.book}"
+            )
         line = ""
         if self.line is not None:
-            if self.market_type in (MarketType.TOTAL, MarketType.ALTERNATE_TOTAL):
+            if self.market_type in (
+                MarketType.TOTAL,
+                MarketType.ALTERNATE_TOTAL,
+                MarketType.TEAM_TOTAL,
+                MarketType.FIRST_HALF_TOTAL,
+            ):
                 line = f" {self.line:g}"
             else:
                 line = f" {self.line:+g}"
-        return f"{self.outcome}{line} ({self.american:+.0f}) @ {self.book}"
+        subject = f"{self.subject} " if self.subject else ""
+        return f"{subject}{self.outcome}{line} ({self.american:+.0f}) @ {self.book}"
 
     def key(self) -> tuple:
-        return (self.event.event_id, self.market_type, self.outcome, self.line)
+        """Identity of the logical bet, independent of which book offers it."""
+        return (
+            self.event.event_id,
+            self.market_type,
+            self.subject,
+            self.stat,
+            self.outcome,
+            self.line,
+        )
+
+    def market_key(self) -> tuple:
+        """Identity of the market this bet sits in, for conflict detection.
+
+        Carries the subject and line so that two players' props -- and two
+        rungs of the same ladder -- are never mistaken for opposite sides of
+        a single market.
+        """
+        return (
+            self.event.event_id,
+            self.market_type,
+            self.subject,
+            self.stat,
+            self.line,
+        )
 
 
 @dataclass
@@ -465,6 +577,9 @@ class SlateResult:
     considered: int = 0
     bankroll: float = 0.0
     skipped: list[tuple[str, str]] = field(default_factory=list)
+    # Ranked view of the card, carrying each bet's scoring components.
+    ranked: list[Any] = field(default_factory=list)   # ranking.ScoredBet
+    card_stats: dict[str, Any] = field(default_factory=dict)
 
     @property
     def total_stake(self) -> float:

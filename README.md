@@ -88,6 +88,120 @@ funded accounts with under `[accounts]`, and run `sharp-edge -c sharp-edge.toml 
 Recommending a price at a book you cannot bet is noise, so configure the
 account list before trusting a card.
 
+## Every market, not just sides
+
+Moneylines, spreads, and totals are the *hardest* markets to beat, because
+they get the most attention from everyone. The engine scans them, but the
+edges concentrate elsewhere — and it prices the full menu accordingly:
+
+| Market | Efficiency | Typical hold | Typical limit |
+|---|---:|---:|---:|
+| Point spread | 0.90 | 4.5% | $25,000 |
+| Moneyline / total | 0.87–0.88 | 4.2–4.5% | $20–25,000 |
+| First half / first five | 0.72–0.78 | 5.0% | $4–5,000 |
+| Team totals | 0.68 | 5.5% | $2,500 |
+| Alternate lines | 0.72 | 6.0% | $3,000 |
+| Pitcher strikeouts | 0.66 | 7.5% | $2,500 |
+| NBA points / rebounds / assists | 0.56–0.66 | 7.2–8.2% | $1,500–2,500 |
+| Anytime touchdown | 0.54 | 11.5% | $1,000 |
+| Tackles, steals, blocks | 0.42–0.46 | 9.5–11% | $250–500 |
+
+The pattern is the whole strategy. A book defends its NFL side with six
+figures and its best analysts; it posts a tackles prop at a $500 limit with a
+model nobody reviews. Almost no sharp money corrects prop markets, so errors
+there survive to settlement.
+
+**The catch, stated plainly:** the softest markets carry the smallest limits.
+An 11% edge on a $250 prop is $27. The engine tracks this explicitly and
+ranks a 3% edge on a $5,000 market above an 11% edge you can only get $250
+down on.
+
+### Every bet inside every bet
+
+The strongest prop edge does not require out-projecting anyone. Books post one
+anchor line and generate the alternates off it with a crude multiplier, rather
+than from the model that produced the anchor. So:
+
+1. Take every price a book posts on a player-stat.
+2. Fit a single distribution across all of them — negative binomial for
+   overdispersed counts like strikeouts, Poisson for rare events, gamma for
+   right-skewed yardage.
+3. Any rung that deviates from the book's own fitted curve is the book
+   **disagreeing with itself**, which is checkable before kickoff.
+
+```
+$ sharp-edge ladder strikeouts 6.5 -115 -105
+Fair over     0.5113  (-105)
+Distribution  negbin, dispersion 1.35
+Implied projection: 6.87
+
+  line      fair over     fair under
+     4.5       -339          +339
+     6.5       -105          +105  <- posted
+     8.5       +266          -266
+     9.5       +438          -438
+```
+
+A book pricing that ladder off a Poisson would offer **+538** on the 9.5 when
+the correct number is **+438**. Poisson assumes variance equals the mean;
+real strikeout counts run about 1.35× overdispersed, which fattens exactly the
+tails alternates are sold on.
+
+The safeguard that makes this trustworthy: **fed a correctly-priced ladder,
+the engine returns zero findings** — at every hold level from 4% to 12% and
+every projection. That is a test, not a claim (`test_no_false_positives_at_any_hold`).
+
+### Where the public's money is
+
+Books do not price to be right. They price to earn the hold against a public
+with known preferences, and that shows up hardest where nobody corrects it:
+
+- **Prop overs.** Roughly 88% of anytime-touchdown tickets and 72% of
+  strikeout tickets take the over — people bet on a player to *do* something.
+  Books shade accordingly, and with no sharp money to correct it the premium
+  survives to settlement. This is the single largest systematic public-money
+  effect on the board.
+- **Handle versus tickets.** 30% of tickets carrying 65% of dollars means the
+  average wager is four times larger on that side. This measures *who* is
+  betting, not how many, and it is far more informative than a ticket count.
+- **Public darlings.** Cowboys, Lakers, Yankees. Books shade their numbers
+  because the money arrives regardless of price.
+- **Ticket percentage alone.** Included, weighted lowest, and labeled as the
+  weak signal it is — public data covers a small unrepresentative slice, and
+  "fade the public" has been known long enough to be partly priced.
+
+### The daily top 10
+
+Every qualifying bet across every market is ranked and cut to a fixed card.
+
+**One caveat worth reading before you set `--rank probability`.** The
+highest-probability bet available on any day is a -3000 favorite at 96.8%. It
+is also nearly the worst price on the board: you risk $30 to win $1, and one
+loss erases thirty wins. Sorting by raw probability produces a card of heavy
+chalk that loses money slowly and reliably — it is what every
+parlay-of-favorites tout sells.
+
+So the default composite balances five things: EV at its lower confidence
+bound, hit probability (favoring the 45–70% band), evidence strength,
+**verifiability** (a stale line is checkable now, a situational read is not),
+and realizable size. Every mode is still selectable:
+
+```bash
+sharp-edge card --top 10                      # composite (default)
+sharp-edge card --top 10 --rank probability   # literal highest win probability
+sharp-edge card --top 10 --min-probability 0.5
+sharp-edge card --props-only
+```
+
+The card reports its own expected record and the odds of a good night, because
+a 4-6 evening on ten 55% bets is an ordinary outcome, not a broken model:
+
+```
+  Expected record 5.1-4.9   |   average win probability 50.5%
+  Market mix: 9 player prop, 1 spread
+  5+ of 10 winning: 64%      7+ of 10: 18%      9+ of 10: 1%
+```
+
 ## What it does
 
 ### Market pricing
@@ -167,6 +281,10 @@ explicitly:
 | Both sides of a market screening +EV | Both are dropped — the fair price is wrong, not the market |
 | Comparing prices at different numbers | Each book's price re-priced at its own line first |
 | Overbetting a real edge into ruin | Fractional Kelly, hard caps, drawdown scaling, stop-loss |
+| Pooling a prop ladder into one price | Each rung priced separately from a jointly-fitted distribution |
+| Extrapolating into an unpriceable tail | Rungs implying under 3% are declined outright |
+| An "edge" that is really bad data | Anything above 35% EV is rejected as a stale quote or parse error |
+| A card of ten props sharing one modeling assumption | Per-market-type caps, flagged when relaxed to fill the card |
 
 The system is built to say "no bets today" and does so often. That is the
 product working. A screen that finds fifteen edges every day has found zero.
@@ -176,6 +294,7 @@ product working. A screen that finds fifteen edges every day has found zero.
 ```bash
 sharp-edge card [-v] [--json out.json] [--markdown card.md] [--log]
 sharp-edge devig -110 -110        # inspect a market's true prices
+sharp-edge ladder strikeouts 6.5 -115 -105   # derive a full alternate ladder
 sharp-edge kelly 0.55 -110        # size a single bet
 sharp-edge simulate --edge 0.02   # what a season actually looks like
 sharp-edge settle 12 won --closing -130
@@ -198,9 +317,11 @@ src/sharpedge/
   pipeline.py       the daily run, start to finish
   report.py         console, Markdown, and JSON output
   cli.py            command line interface
-  market/           book registry, consensus pricing, movement, line shopping
-  signals/          injuries, news, weather, situational, market-derived
-  pricing/          expected value, Kelly, portfolio construction
+  ranking.py        daily top-N selection and the probability/value trade-off
+  market/           book registry, consensus, movement, shopping, props,
+                    public money, market taxonomy
+  signals/          injuries, news, weather, situational, market-derived, props
+  pricing/          expected value, Kelly, portfolio, stat distributions
   risk/             bankroll management, correlation
   track/            ledger, closing line value, calibration
   backtest/         Monte Carlo simulation
@@ -217,11 +338,13 @@ that they are carried at near-zero weight.
 pip install pytest && pytest
 ```
 
-259 tests, no network required. They cover the math against known values
+328 tests, no network required. They cover the math against known values
 (-110 is 52.38%, three is the most common NFL margin, Kelly at p=0.6 and even
 money is 0.2), and the behaviors that matter: the screen must find the stale
 lines the demo generator plants, and it must never recommend both sides of a
-market, exceed an exposure cap, or return a negative-EV bet.
+market, exceed an exposure cap, or return a negative-EV bet. The most
+important one is negative: fed a coherently-priced prop ladder, the engine
+must find **nothing**.
 
 ## Limits and honest caveats
 
@@ -234,6 +357,12 @@ market, exceed an exposure cap, or return a negative-EV bet.
   slice of the market, which is why signals derived from it are weighted low.
 - **Correlations are structural, not estimated.** Estimating them from your own
   history needs more settled bets than anyone has.
+- **Prop distribution shapes are empirical priors, not fitted per player.** The
+  dispersion constants are league-typical. A knuckleballer or a
+  bench player with erratic minutes will not match them.
+- **Prop limits are small and prop accounts get limited fastest.** Books
+  tolerate losing on sides far longer than on props, because prop losses
+  identify you immediately.
 - **This is not financial advice, and it is not a guarantee.** It is a
   disciplined framework for a negative-sum game where the house holds a
   structural advantage. Bet only what you can afford to lose. If gambling stops

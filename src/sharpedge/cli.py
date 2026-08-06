@@ -37,6 +37,20 @@ def main(argv: list[str] | None = None) -> int:
     p_card.add_argument("-v", "--verbose", action="store_true")
     p_card.add_argument("--log", action="store_true", help="record the bets in the ledger")
     p_card.add_argument("--bankroll", type=float, help="override the configured bankroll")
+    p_card.add_argument("--top", type=int, help="how many bets the card should contain (default 10)")
+    p_card.add_argument(
+        "--rank",
+        choices=["value", "probability", "edge", "confidence", "kelly"],
+        help="ranking mode. 'value' (default) balances edge, hit rate, evidence "
+             "and verifiability; 'probability' sorts by raw win probability, which "
+             "selects heavy favorites at poor prices -- see docs/METHODOLOGY.md",
+    )
+    p_card.add_argument(
+        "--min-probability", type=float,
+        help="only include bets winning at least this often (e.g. 0.5)",
+    )
+    p_card.add_argument("--no-props", action="store_true", help="skip player props")
+    p_card.add_argument("--props-only", action="store_true", help="player props only")
 
     sub.add_parser("init", help="write a starter config file").add_argument(
         "path", nargs="?", default="sharp-edge.toml"
@@ -61,6 +75,14 @@ def main(argv: list[str] | None = None) -> int:
     p_kelly.add_argument("--bankroll", type=float, default=10_000.0)
     p_kelly.add_argument("--multiplier", type=float, default=0.25)
 
+    p_ladder = sub.add_parser(
+        "ladder", help="derive a full alternate-line ladder from one price"
+    )
+    p_ladder.add_argument("stat", help="e.g. strikeouts, points, receiving_yards")
+    p_ladder.add_argument("line", type=float, help="the posted line")
+    p_ladder.add_argument("over", type=float, help="over price, American")
+    p_ladder.add_argument("under", type=float, help="under price, American")
+
     p_settle = sub.add_parser("settle", help="grade a bet in the ledger")
     p_settle.add_argument("bet_id", type=int)
     p_settle.add_argument("result", choices=["won", "lost", "pushed", "voided"])
@@ -83,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         "simulate": _cmd_simulate,
         "devig": _cmd_devig,
         "kelly": _cmd_kelly,
+        "ladder": _cmd_ladder,
         "settle": _cmd_settle,
     }
     return handlers[args.command](args, cfg)
@@ -94,6 +117,20 @@ def main(argv: list[str] | None = None) -> int:
 def _cmd_card(args, cfg) -> int:
     if args.bankroll:
         cfg.bankroll.starting = args.bankroll
+    if args.top:
+        cfg.filters.card_size = args.top
+    if args.rank:
+        cfg.filters.rank_mode = args.rank
+    if args.min_probability is not None:
+        cfg.filters.min_probability = args.min_probability
+    if args.no_props:
+        cfg.filters.include_props = False
+    if args.props_only:
+        cfg.filters.exclude_markets = [
+            m.value for m in __import__(
+                "sharpedge.models", fromlist=["MarketType"]
+            ).MarketType if not m.is_prop
+        ]
 
     try:
         inputs = pipeline.fetch_inputs(cfg)
@@ -297,6 +334,43 @@ def _cmd_kelly(args, cfg) -> int:
     )
     print(f"\nRisk of a 50% drawdown at full Kelly: {risk_of_ruin(p, full):.1%}")
     print(f"                       at {args.multiplier:g} Kelly: {risk_of_ruin(p, fractional):.1%}")
+    return 0
+
+
+def _cmd_ladder(args, cfg) -> int:
+    from .market.props import over_shading
+    from .oddsmath import devig
+    from .pricing.distributions import fit_to_market, model_for, standard_ladder
+
+    raw = [american_to_prob(args.over), american_to_prob(args.under)]
+    fair = devig(raw, method=cfg.model.devig_method)
+    dist = fit_to_market(args.stat, args.line, fair[0])
+    model = model_for(args.stat)
+
+    print(f"{args.stat.replace('_', ' ')} {args.line:g}: {args.over:+.0f} / {args.under:+.0f}")
+    print(f"Hold          {hold(raw):.2%}")
+    print(f"Fair over     {fair[0]:.4f}  ({prob_to_american(fair[0]):+.0f})")
+    print(f"Distribution  {model.family}" + (f", dispersion {model.parameter}" if model.family == "negbin" else ""))
+    print(f"Implied projection: {dist.mean:.2f}")
+    print()
+    print("  line      fair over     fair under")
+    for candidate in standard_ladder(args.line, args.stat):
+        p = dist.sf(candidate)
+        if not 0.02 < p < 0.98:
+            continue
+        marker = "  <- posted" if abs(candidate - args.line) < 1e-9 else ""
+        print(f"  {candidate:>6g}   {prob_to_american(p):>+8.0f}      {prob_to_american(1-p):>+8.0f}{marker}")
+    print()
+    print(
+        "Compare these against the book's own alternates. Where they disagree, "
+        "the book disagrees with itself."
+    )
+    shading = over_shading(args.stat)
+    if shading > 0.01:
+        print(
+            f"Note: overs on this stat carry roughly {shading:.3f} log-odds of "
+            "public shading, so the honest over price is a little worse than shown."
+        )
     return 0
 
 

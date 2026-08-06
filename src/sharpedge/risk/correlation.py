@@ -50,6 +50,12 @@ def pair_correlation(a: BetCandidate, b: BetCandidate) -> float:
         return 1.0
 
     if a.event.event_id == b.event.event_id:
+        # Props need subject-aware handling before anything else. Two players'
+        # "Over" in the same game are not the same bet, and an Over on one
+        # player is not the opposite of an Under on another.
+        if a.market_type.is_prop or b.market_type.is_prop:
+            return _prop_correlation(a, b)
+
         # Opposite sides of the same market are strongly negatively
         # correlated -- they cannot both win.
         if a.market_type == b.market_type and a.outcome != b.outcome:
@@ -73,6 +79,93 @@ def pair_correlation(a: BetCandidate, b: BetCandidate) -> float:
             return SAME_LEAGUE_SAME_DAY
 
     return 0.0
+
+
+# How strongly two stats for the *same player* move together. Getting these
+# wrong is how a card ends up with five bets that are really one bet: a
+# player's points, PRA, and threes are close to the same wager.
+SAME_PLAYER_STATS: dict[frozenset[str], float] = {
+    frozenset({"points", "pra"}): 0.86,
+    frozenset({"points", "threes_made"}): 0.55,
+    frozenset({"points", "rebounds"}): 0.22,
+    frozenset({"points", "assists"}): 0.20,
+    frozenset({"rebounds", "pra"}): 0.52,
+    frozenset({"assists", "pra"}): 0.48,
+    frozenset({"receptions", "receiving_yards"}): 0.82,
+    frozenset({"receiving_yards", "longest_reception"}): 0.74,
+    frozenset({"rush_attempts", "rushing_yards"}): 0.80,
+    frozenset({"passing_yards", "passing_tds"}): 0.55,
+    frozenset({"passing_yards", "completions"}): 0.85,
+    frozenset({"strikeouts", "outs_recorded"}): 0.55,
+    frozenset({"strikeouts", "earned_runs"}): -0.35,
+    frozenset({"hits_allowed", "earned_runs"}): 0.68,
+    frozenset({"hits", "total_bases"}): 0.80,
+    frozenset({"total_bases", "rbis"}): 0.52,
+}
+
+# Two different players on the same team share game script and pace.
+TEAMMATE_PROP_CORRELATION = 0.22
+# Opposing players share pace but compete for the same game outcome.
+OPPONENT_PROP_CORRELATION = 0.08
+# A player's counting stats against his own team's total.
+PROP_TEAM_TOTAL_CORRELATION = 0.34
+
+
+def _prop_correlation(a: BetCandidate, b: BetCandidate) -> float:
+    """Correlation between prop bets, and between a prop and a game market."""
+    a_prop = a.market_type.is_prop
+    b_prop = b.market_type.is_prop
+
+    # One prop, one game market: the prop moves with the side or total
+    # through game script.
+    if a_prop != b_prop:
+        game = b if a_prop else a
+        rho = {
+            MarketType.TEAM_TOTAL: PROP_TEAM_TOTAL_CORRELATION,
+            MarketType.TOTAL: 0.20,
+            MarketType.SPREAD: 0.14,
+            MarketType.MONEYLINE: 0.12,
+        }.get(game.market_type, 0.10)
+        return rho if not _opposing_directions(a, b) else -rho
+
+    # Same player.
+    if a.subject and a.subject == b.subject:
+        if a.stat == b.stat:
+            # Same stat: either the same rung (nearly identical) or opposite
+            # sides of one ladder (mutually exclusive).
+            if a.outcome != b.outcome:
+                return -0.90
+            return 0.97 if a.line == b.line else 0.88
+        base = SAME_PLAYER_STATS.get(frozenset({a.stat or "", b.stat or ""}), 0.30)
+        # Direction matters: his points over and rebounds over agree; his
+        # points over and someone's under do not.
+        if a.outcome != b.outcome:
+            return -base
+        return base
+
+    # Different players.
+    same_team = _same_team_props(a, b)
+    base = TEAMMATE_PROP_CORRELATION if same_team else OPPONENT_PROP_CORRELATION
+    if a.outcome != b.outcome:
+        return -base * 0.5
+    return base
+
+
+def _same_team_props(a: BetCandidate, b: BetCandidate) -> bool:
+    """Whether two prop subjects play for the same team.
+
+    The demo and real feeds both tag the subject with a team suffix; falling
+    back to False is the safe direction, since it treats the pair as less
+    correlated only when we genuinely cannot tell.
+    """
+    depth = (a.event.metadata or {}).get("depth_chart", {})
+    team_a = team_b = None
+    for team, roster in depth.items():
+        if a.subject in roster:
+            team_a = team
+        if b.subject in roster:
+            team_b = team
+    return team_a is not None and team_a == team_b
 
 
 def _opposing_directions(a: BetCandidate, b: BetCandidate) -> bool:
