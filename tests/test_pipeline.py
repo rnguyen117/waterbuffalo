@@ -57,6 +57,36 @@ class TestDemoSource:
         assert source.fetch_public(events)
         assert isinstance(source.fetch_weather(events), dict)
 
+    def test_wnba_gets_its_own_teams_and_scoring_level(self):
+        # Before the fix, any sport other than "nfl" fell through to the
+        # NBA's team list -- adding WNBA without a real per-sport lookup
+        # would have quietly generated WNBA-tagged games played between NBA
+        # franchises at NBA scoring levels.
+        from sharpedge.sources.demo import NBA_TEAMS, WNBA_TEAMS
+
+        events = DemoSource(seed=9, n_events=6).fetch_events(["wnba"])
+        assert len(events) == 6
+        for e in events:
+            assert e.sport == "wnba"
+            assert e.home_team in WNBA_TEAMS
+            assert e.away_team in WNBA_TEAMS
+            assert e.home_team not in NBA_TEAMS
+
+    def test_wnba_totals_are_lower_than_nba(self):
+        # WNBA quarters run 10 minutes to the NBA's 12; the combined score
+        # should land well below the NBA's, not share its scoring level.
+        nba_events = DemoSource(seed=11, n_events=10).fetch_events(["nba"])
+        wnba_events = DemoSource(seed=11, n_events=10).fetch_events(["wnba"])
+
+        def total_line(events):
+            for e in events:
+                for p in e.market(MarketType.TOTAL).prices_for("Over"):
+                    if p.line is not None:
+                        return p.line
+            return None
+
+        assert total_line(wnba_events) < total_line(nba_events)
+
 
 class TestFullPipeline:
     def test_runs_without_error(self, tmp_path):
@@ -74,8 +104,14 @@ class TestFullPipeline:
         # market. With props disabled the card is core markets only, so the
         # stale lines are what should surface. If nothing does, the screen is
         # broken rather than disciplined.
+        #
+        # Sports are pinned explicitly rather than left at the config
+        # default: this test is about stale-line detection, not about how
+        # many sports happen to be active out of the box, and it should not
+        # flake if that default list changes size.
         cfg = Config()
         cfg.data_dir = str(tmp_path)
+        cfg.sources.sports = ["nfl", "nba"]
         cfg.filters.include_props = False
         cfg.filters.include_derivatives = False
         inputs = pipeline.fetch_inputs(cfg)

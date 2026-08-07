@@ -54,6 +54,28 @@ ROSTERS: dict[str, list[tuple[str, str, float]]] = {
         ("E. Rosales", "C", 0.15),
         ("B. Ashworth", "IF", 0.14),
     ],
+    "wnba": [
+        ("R. Alvarado", "PG", 0.28),
+        ("K. Sunderland", "SG", 0.22),
+        ("T. Whitfeld", "SF", 0.20),
+        ("M. Novak", "PF", 0.17),
+        ("D. Achebe", "C", 0.13),
+    ],
+}
+
+# Basketball counting stats run meaningfully lower in the WNBA than the NBA
+# -- 40-minute games against 48, 12-player benches against 15 -- so points,
+# rebounds, and assists all need their own projection rather than sharing the
+# NBA's. Stats not listed here (e.g. steals, blocks) fall back to
+# BASE_PROJECTION unchanged since their per-minute rates are closer.
+SPORT_PROJECTION_OVERRIDES: dict[str, dict[str, tuple[float, float]]] = {
+    "wnba": {
+        "points": (14.0, 5.0),
+        "rebounds": (5.6, 2.2),
+        "assists": (3.6, 1.8),
+        "threes_made": (1.4, 0.7),
+        "pra": (23.5, 7.0),
+    },
 }
 
 # Typical projections by stat, used as the hidden truth the market prices near.
@@ -132,6 +154,9 @@ class DemoPropSource:
         if event.sport == "nba":
             event.metadata["projected_pace"] = round(self.rng.uniform(96, 104), 1)
             event.metadata["league_pace"] = 99.5
+        if event.sport == "wnba":
+            event.metadata["projected_pace"] = round(self.rng.uniform(78, 86), 1)
+            event.metadata["league_pace"] = 82.0
         if event.sport == "mlb":
             event.metadata["umpire_k_factor"] = round(self.rng.uniform(0.92, 1.09), 3)
             event.metadata["park_factor"] = round(self.rng.uniform(0.88, 1.14), 3)
@@ -228,7 +253,7 @@ class DemoPropSource:
     def _prop_market(
         self, event: Event, player: str, stat: str, now: datetime
     ) -> Market | None:
-        base = BASE_PROJECTION.get(stat)
+        base = SPORT_PROJECTION_OVERRIDES.get(event.sport, {}).get(stat) or BASE_PROJECTION.get(stat)
         if base is None:
             return None
         mean, spread = base

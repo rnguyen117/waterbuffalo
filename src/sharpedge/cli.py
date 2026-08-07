@@ -37,6 +37,14 @@ def main(argv: list[str] | None = None) -> int:
     p_card.add_argument("-v", "--verbose", action="store_true")
     p_card.add_argument("--log", action="store_true", help="record the bets in the ledger")
     p_card.add_argument("--bankroll", type=float, help="override the configured bankroll")
+    p_card.add_argument(
+        "--unit-size", type=float,
+        help="dollar value of one unit, for display (default: 1%% of bankroll)",
+    )
+    p_card.add_argument(
+        "--kelly-multiplier", type=float,
+        help="override the configured fraction of full Kelly (e.g. 0.25)",
+    )
     p_card.add_argument("--top", type=int, help="how many bets the card should contain (default 10)")
     p_card.add_argument(
         "--rank",
@@ -74,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
     p_kelly.add_argument("american", type=float, help="the price offered")
     p_kelly.add_argument("--bankroll", type=float, default=10_000.0)
     p_kelly.add_argument("--multiplier", type=float, default=0.25)
+    p_kelly.add_argument(
+        "--unit-size", type=float,
+        help="dollar value of one unit, for display (default: 1%% of bankroll)",
+    )
 
     p_ladder = sub.add_parser(
         "ladder", help="derive a full alternate-line ladder from one price"
@@ -117,6 +129,10 @@ def main(argv: list[str] | None = None) -> int:
 def _cmd_card(args, cfg) -> int:
     if args.bankroll:
         cfg.bankroll.starting = args.bankroll
+    if args.unit_size:
+        cfg.bankroll.unit_size = args.unit_size
+    if args.kelly_multiplier is not None:
+        cfg.bankroll.kelly_multiplier = args.kelly_multiplier
     if args.top:
         cfg.filters.card_size = args.top
     if args.rank:
@@ -144,13 +160,14 @@ def _cmd_card(args, cfg) -> int:
     finally:
         history.close()
 
-    print(report.console(result, verbose=args.verbose))
+    unit = cfg.bankroll.effective_unit_size
+    print(report.console(result, verbose=args.verbose, unit_size=unit))
 
     if args.json:
-        Path(args.json).write_text(report.to_json(result))
+        Path(args.json).write_text(report.to_json(result, unit_size=unit))
         print(f"\nwrote JSON to {args.json}")
     if args.markdown:
-        Path(args.markdown).write_text(report.markdown(result))
+        Path(args.markdown).write_text(report.markdown(result, unit_size=unit))
         print(f"wrote Markdown to {args.markdown}")
 
     if args.log and result.bets:
@@ -320,6 +337,7 @@ def _cmd_kelly(args, cfg) -> int:
     full = kelly_fraction(p, a)
     fractional = full * args.multiplier
     ev = expected_value(p, a)
+    unit = args.unit_size if args.unit_size else args.bankroll / 100.0
 
     print(f"Price {a:+.0f}  |  break-even {break_even_probability(a):.2%}  |  your {p:.2%}")
     print(f"Edge          {p - break_even_probability(a):+.2%}")
@@ -327,10 +345,12 @@ def _cmd_kelly(args, cfg) -> int:
     if full <= 0:
         print("\nNo edge here. Kelly says do not bet.")
         return 0
-    print(f"Full Kelly    {full:.2%} of bankroll  (${args.bankroll * full:,.0f})")
+    full_stake = args.bankroll * full
+    frac_stake = args.bankroll * fractional
+    print(f"Full Kelly    {full:.2%} of bankroll  (${full_stake:,.0f}, {full_stake / unit:.2f}u)")
     print(
         f"At {args.multiplier:g}x       {fractional:.2%} of bankroll  "
-        f"(${args.bankroll * fractional:,.0f})   <- use this"
+        f"(${frac_stake:,.0f}, {frac_stake / unit:.2f}u)   <- use this"
     )
     print(f"\nRisk of a 50% drawdown at full Kelly: {risk_of_ruin(p, full):.1%}")
     print(f"                       at {args.multiplier:g} Kelly: {risk_of_ruin(p, fractional):.1%}")

@@ -47,6 +47,14 @@ USAGE_TRANSFER: dict[str, dict[str, float]] = {
         "same_unit": 0.22,
         "team_wide": 0.11,
     },
+    "wnba": {
+        # 12-player rosters against the NBA's 15 mean a star's absence has
+        # fewer bodies to redistribute to, so what remains concentrates
+        # harder on the players who share her role.
+        "same_position": 0.48,
+        "same_unit": 0.24,
+        "team_wide": 0.12,
+    },
     "nfl": {
         "same_position": 0.55,   # a WR2 absorbing WR1 targets
         "same_unit": 0.18,

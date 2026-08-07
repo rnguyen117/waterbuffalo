@@ -56,11 +56,37 @@ NBA_TEAMS = [
     "Philadelphia 76ers", "Dallas Mavericks", "Minnesota Timberwolves", "Utah Jazz",
 ]
 
+WNBA_TEAMS = [
+    "Las Vegas Aces", "New York Liberty", "Connecticut Sun", "Minnesota Lynx",
+    "Seattle Storm", "Phoenix Mercury", "Indiana Fever", "Chicago Sky",
+    "Atlanta Dream", "Washington Mystics", "Dallas Wings", "Los Angeles Sparks",
+]
+
+# Team pool and typical combined final score, per sport. Explicit per sport
+# rather than a binary if/else -- a fallback that quietly hands an unlisted
+# sport the wrong league's teams and scoring level is a bug waiting for the
+# next sport added, which is exactly how WNBA's team pool was almost wired up
+# to reuse the NBA's.
+SPORT_TEAMS: dict[str, list[str]] = {
+    "nfl": NFL_TEAMS,
+    "nba": NBA_TEAMS,
+    "wnba": WNBA_TEAMS,
+}
+
+# WNBA quarters run 10 minutes to the NBA's 12 and rosters carry fewer high-
+# usage scorers, so the combined final score sits well below the NBA's.
+SPORT_BASE_TOTAL: dict[str, float] = {
+    "nfl": 44.5,
+    "nba": 224.5,
+    "wnba": 163.5,
+}
+
 # Teams the public bets regardless of price. Retail books shade their numbers
 # because they know the money is coming either way.
 PUBLIC_TEAMS = {
     "Kansas City Chiefs", "Dallas Cowboys", "Green Bay Packers", "Philadelphia Eagles",
     "Los Angeles Lakers", "Golden State Warriors", "Boston Celtics", "New York Knicks",
+    "New York Liberty", "Las Vegas Aces", "Indiana Fever",
 }
 
 
@@ -84,12 +110,12 @@ class DemoSource:
 
         for i in range(self.n_events):
             sport = sports[i % len(sports)]
-            teams = NFL_TEAMS if sport == "nfl" else NBA_TEAMS
+            teams = SPORT_TEAMS.get(sport, NBA_TEAMS)
             pool = self.rng.sample(teams, 2)
             home, away = pool[0], pool[1]
 
             true_spread = round(self.rng.uniform(-10.5, 10.5) * 2) / 2  # home spread
-            base_total = 44.5 if sport == "nfl" else 224.5
+            base_total = SPORT_BASE_TOTAL.get(sport, 224.5)
             true_total = round((base_total + self.rng.uniform(-8, 8)) * 2) / 2
             hours_out = self.rng.uniform(2, 72)
 
@@ -268,6 +294,11 @@ class DemoSource:
         if sport == "nba":
             meta["back_to_back"] = {away: self.rng.random() < 0.28, home: self.rng.random() < 0.14}
             meta["rest_days"] = {home: self.rng.choice([1, 2, 2, 3]), away: self.rng.choice([0, 1, 1, 2])}
+        if sport == "wnba":
+            # A much lighter schedule than the NBA's (roughly 40 games to 82),
+            # so true back-to-backs are less common.
+            meta["back_to_back"] = {away: self.rng.random() < 0.16, home: self.rng.random() < 0.08}
+            meta["rest_days"] = {home: self.rng.choice([1, 2, 2, 3, 4]), away: self.rng.choice([1, 1, 2, 2, 3])}
         if sport == "nfl":
             meta["off_bye"] = {home: self.rng.random() < 0.10, away: self.rng.random() < 0.10}
             meta["short_week"] = {home: self.rng.random() < 0.08, away: self.rng.random() < 0.08}

@@ -105,6 +105,14 @@ edges concentrate elsewhere — and it prices the full menu accordingly:
 | NBA points / rebounds / assists | 0.56–0.66 | 7.2–8.2% | $1,500–2,500 |
 | Anytime touchdown | 0.54 | 11.5% | $1,000 |
 | Tackles, steals, blocks | 0.42–0.46 | 9.5–11% | $250–500 |
+| WNBA points / rebounds / assists | 0.44–0.52 | 9.0–9.8% | $500–750 |
+
+WNBA props are registered under their own `(sport, stat)` key, not folded
+into the NBA's — the two share stat names ("points", "assists") but not a
+profile. A lookup keyed on the stat alone would let whichever sport loads
+last in the registry silently overwrite the other's efficiency and limit
+numbers, which is exactly the kind of bug this system exists to prevent
+elsewhere and very nearly reintroduced here.
 
 The pattern is the whole strategy. A book defends its NFL side with six
 figures and its best analysts; it posts a tackles prop at a $500 limit with a
@@ -294,15 +302,27 @@ product working. A screen that finds fifteen edges every day has found zero.
 
 ```bash
 sharp-edge card [-v] [--json out.json] [--markdown card.md] [--log]
+sharp-edge card --unit-size 50 --kelly-multiplier 0.25   # stakes shown in $ and units
 sharp-edge devig -110 -110        # inspect a market's true prices
 sharp-edge ladder strikeouts 6.5 -115 -105   # derive a full alternate ladder
-sharp-edge kelly 0.55 -110        # size a single bet
+sharp-edge kelly 0.55 -110 --unit-size 50    # size a single bet, in $ and units
 sharp-edge simulate --edge 0.02   # what a season actually looks like
 sharp-edge settle 12 won --closing -130
 sharp-edge clv                    # are you beating the close?
 sharp-edge calibrate              # are your probabilities honest?
 sharp-edge summary                # performance by book, league, market
 ```
+
+**Units** are a display convention, not a different sizing model: every
+stake is still a fractional-Kelly dollar amount against the current
+bankroll, shown alongside its unit equivalent because that's how bettors
+actually talk about a card ("2.5u on the under"). `--unit-size` sets the
+dollar value of one unit directly; leave it unset and one unit defaults to
+1% of the bankroll, rebasing automatically as the bankroll changes.
+`sharp-edge card --json` exports `unit_size`, `stake_units`, and
+`kelly_fraction` per bet, which is what lets the [web dashboard](#dashboard)
+recompute stakes at a different bankroll or unit size without rerunning the
+Python pipeline.
 
 `sharp-edge simulate` is worth running before you bet anything. At a 2% edge
 over 540 bets, you finish profitable 64% of the time and see a 20% drawdown

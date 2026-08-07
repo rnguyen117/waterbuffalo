@@ -127,7 +127,7 @@ def score(bet: BetCandidate, ev_lower: float | None = None) -> ScoredBet:
     # 5. Realizable size: an edge you can only get $250 down on is worth less
     # than a smaller one on a market that takes $5,000. The stat matters here
     # -- a strikeout prop and a tackles prop have very different limits.
-    profile = profile_for(bet.market_type, bet.stat)
+    profile = profile_for(bet.market_type, bet.stat, sport=bet.event.sport)
     limit = profile.typical_limit
     realizable = min(1.0, math.log10(max(limit, 100.0)) / 4.0)
 

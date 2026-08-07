@@ -29,32 +29,14 @@ min_books_for_consensus = 3
 [filters]
 min_ev = 0.01
 min_ev_lower = 0.0
-# Upper sanity bound. Above this, an "edge" is a stale quote or a parse
-# error, not an opportunity. Raise it only when you know why.
-max_ev = 0.35
 max_hold = 0.07
 min_books = 3
 max_hours_to_start = 96.0
 
-# The daily card. Every qualifying bet across every market is ranked and cut
-# to card_size.
-card_size = 10
-# "value" (default) balances edge, hit rate, evidence, verifiability and
-# realizable size. "probability" sorts by raw win probability, which selects
-# heavy favorites at poor prices -- read docs/METHODOLOGY.md section 10 first.
-rank_mode = "value"
-min_probability = 0.0
-max_per_game = 2
-# Caps per market type to hedge model risk: every prop shares the same
-# distribution assumptions, so they fail together.
-max_per_market_type = 6
-include_props = true
-include_derivatives = true
-
 [sources]
 provider = "demo"          # "demo" or "theoddsapi"
 # api_key = ""             # or set ODDS_API_KEY in the environment
-sports = ["nfl", "nba"]
+sports = ["nfl", "nba", "wnba"]
 regions = ["us", "us2", "eu"]
 markets = ["h2h", "spreads", "totals"]
 

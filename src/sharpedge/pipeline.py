@@ -222,7 +222,7 @@ def run(
             # and EV floor. A 2% edge on a spread and a 2% edge on a tackles
             # prop are not the same claim, and treating them alike either
             # floods the card with prop noise or ignores props entirely.
-            profile = profile_for(market.market_type, market.stat)
+            profile = profile_for(market.market_type, market.stat, sport=event.sport)
             max_hold = max(config.filters.max_hold, profile.typical_hold * 1.35)
             min_ev = max(config.filters.min_ev, profile.min_edge_required)
 
@@ -546,7 +546,7 @@ def _prop_candidates(
     if prop is None:
         return [], []
 
-    profile = profile_for(market.market_type, market.stat)
+    profile = profile_for(market.market_type, market.stat, sport=event.sport)
     playable, reason = props_module.is_playable(
         prop,
         max_hold=profile.typical_hold * 1.35,

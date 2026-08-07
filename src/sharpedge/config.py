@@ -25,6 +25,22 @@ class BankrollConfig:
     round_stakes_to: float = 1.0
     # Cut stake sizes automatically after a drawdown.
     drawdown_scaling: bool = True
+    # Dollar value of one "unit", the way bettors actually talk about stakes
+    # ("2.5 units on the under") rather than raw dollar figures that drift
+    # with a fluctuating bankroll. This is a reporting convention layered on
+    # top of the sizing math, not a different sizing model: every stake is
+    # still the fractional-Kelly dollar amount computed against the current
+    # bankroll, just also expressed in units for the record book. Leave unset
+    # to use the standard convention of 1 unit = 1% of the starting bankroll.
+    unit_size: float | None = None
+
+    @property
+    def effective_unit_size(self) -> float:
+        return self.unit_size if self.unit_size else self.starting / 100.0
+
+    def to_units(self, dollars: float) -> float:
+        size = self.effective_unit_size
+        return dollars / size if size > 0 else 0.0
 
 
 @dataclass
@@ -83,7 +99,7 @@ class FilterConfig:
 class SourceConfig:
     provider: str = "demo"            # "demo" | "theoddsapi"
     api_key: str = ""
-    sports: list[str] = field(default_factory=lambda: ["nfl", "nba"])
+    sports: list[str] = field(default_factory=lambda: ["nfl", "nba", "wnba"])
     regions: list[str] = field(default_factory=lambda: ["us", "us2", "eu"])
     markets: list[str] = field(default_factory=lambda: ["h2h", "spreads", "totals"])
     news_feeds: list[str] = field(default_factory=list)
@@ -170,6 +186,11 @@ max_bet_fraction = 0.03
 min_stake = 5.0
 round_stakes_to = 1.0
 drawdown_scaling = true
+# Dollar value of one unit, for reporting stakes the way bettors actually
+# talk about them ("2.5u on the under"). Purely a display convention --
+# sizing itself is still fractional Kelly against the bankroll. Leave
+# commented to use the standard 1 unit = 1% of starting bankroll.
+# unit_size = 100.0
 
 [model]
 devig_method = "shin"
@@ -190,7 +211,7 @@ max_hours_to_start = 96.0
 [sources]
 provider = "demo"          # "demo" or "theoddsapi"
 # api_key = ""             # or set ODDS_API_KEY in the environment
-sports = ["nfl", "nba"]
+sports = ["nfl", "nba", "wnba"]
 regions = ["us", "us2", "eu"]
 markets = ["h2h", "spreads", "totals"]
 

@@ -106,18 +106,19 @@ class RestSignal:
         opp_rest = rest.get(opponent) if opponent else None
         if own_rest is not None and opp_rest is not None:
             diff = own_rest - opp_rest
-            per_day = {"nba": 0.35, "nhl": 0.25, "nfl": 0.55, "ncaab": 0.30}.get(sport, 0.25)
+            per_day = {"nba": 0.35, "wnba": 0.30, "nhl": 0.25, "nfl": 0.55, "ncaab": 0.30}.get(sport, 0.25)
             capped = clamp(diff, -3, 3)
             if abs(capped) >= 1:
                 points += capped * per_day
                 reasons.append(f"{capped:+.0f} days rest vs opponent")
 
-        if sport in ("nba", "nhl"):
+        if sport in ("nba", "wnba", "nhl"):
+            b2b_value = {"nba": 1.1, "wnba": 0.9, "nhl": 0.35}.get(sport, 0.5)
             if b2b.get(team):
-                points -= 1.1 if sport == "nba" else 0.35
+                points -= b2b_value
                 reasons.append("on the second night of a back-to-back")
             if opponent and b2b.get(opponent):
-                points += 1.1 if sport == "nba" else 0.35
+                points += b2b_value
                 reasons.append("opponent on a back-to-back")
             if third.get(team):
                 points -= 0.6

@@ -60,6 +60,10 @@ PUBLIC_DARLINGS: dict[str, float] = {
     "Los Angeles Dodgers": 0.90,
     "Boston Red Sox": 0.75,
     "Chicago Cubs": 0.70,
+    # WNBA
+    "Indiana Fever": 0.95,   # the single biggest handle draw in the league
+    "New York Liberty": 0.75,
+    "Las Vegas Aces": 0.70,
 }
 
 

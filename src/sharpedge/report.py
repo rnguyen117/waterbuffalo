@@ -23,15 +23,26 @@ TIER_LABEL = {
 }
 
 
-def console(result: SlateResult, verbose: bool = False) -> str:
-    """Human-readable card for a terminal."""
+def console(result: SlateResult, verbose: bool = False, unit_size: float | None = None) -> str:
+    """Human-readable card for a terminal.
+
+    ``unit_size`` is the dollar value of one betting unit, purely for
+    display -- stakes are always Kelly-correct dollar amounts against the
+    bankroll, shown alongside their unit equivalent because that is how
+    bettors actually track a card. Defaults to 1% of the bankroll, the
+    standard convention, when not given.
+    """
+    unit = unit_size if unit_size else result.bankroll / 100.0
     lines: list[str] = []
     add = lines.append
 
     add("=" * 78)
     add(f"  DAILY CARD  -  {result.generated_at:%Y-%m-%d %H:%M UTC}")
     add("=" * 78)
-    add(f"  Bankroll ${result.bankroll:,.0f}   |   {result.considered:,} prices screened")
+    add(
+        f"  Bankroll ${result.bankroll:,.0f}   |   1 unit = ${unit:,.2f}   |   "
+        f"{result.considered:,} prices screened"
+    )
 
     if not result.bets:
         add("")
@@ -49,7 +60,8 @@ def console(result: SlateResult, verbose: bool = False) -> str:
         return "\n".join(lines)
 
     add(
-        f"  {len(result.bets)} bets   |   ${result.total_stake:,.0f} at risk "
+        f"  {len(result.bets)} bets   |   ${result.total_stake:,.0f} "
+        f"({result.total_stake / unit:.1f}u) at risk "
         f"({result.total_stake / result.bankroll:.1%} of bankroll)"
     )
     add(
@@ -107,7 +119,7 @@ def console(result: SlateResult, verbose: bool = False) -> str:
             add(f"  {bet.event.name}  [{bet.event.league}]  {bet.event.start_time:%a %H:%M UTC}")
             add(f"  >> {bet.description}")
             add(
-                f"     Stake ${bet.stake:,.0f}  |  EV {bet.ev_pct:+.2f}%  |  "
+                f"     Stake ${bet.stake:,.0f} ({bet.stake / unit:.2f}u)  |  EV {bet.ev_pct:+.2f}%  |  "
                 f"fair {bet.fair.fair_american:+.0f}  |  model {bet.model_probability:.1%} "
                 f"vs market {bet.implied:.1%}"
             )
@@ -158,16 +170,17 @@ def console(result: SlateResult, verbose: bool = False) -> str:
     return "\n".join(lines)
 
 
-def markdown(result: SlateResult) -> str:
+def markdown(result: SlateResult, unit_size: float | None = None) -> str:
     """Markdown card, for a file, a commit, or a message."""
+    unit = unit_size if unit_size else result.bankroll / 100.0
     lines: list[str] = []
     add = lines.append
 
     add(f"# Daily Card - {result.generated_at:%Y-%m-%d}")
     add("")
     add(
-        f"**Bankroll** ${result.bankroll:,.0f} | **Screened** {result.considered:,} prices "
-        f"| **Selected** {len(result.bets)}"
+        f"**Bankroll** ${result.bankroll:,.0f} | **Unit** ${unit:,.2f} | "
+        f"**Screened** {result.considered:,} prices | **Selected** {len(result.bets)}"
     )
     add("")
 
@@ -181,17 +194,19 @@ def markdown(result: SlateResult) -> str:
         return "\n".join(lines)
 
     add(
-        f"**At risk** ${result.total_stake:,.0f} ({result.total_stake / result.bankroll:.1%}) "
+        f"**At risk** ${result.total_stake:,.0f} ({result.total_stake / unit:.1f}u, "
+        f"{result.total_stake / result.bankroll:.1%}) "
         f"| **Expected profit** ${result.expected_profit:,.2f} ({result.expected_roi:+.2%})"
     )
     add("")
-    add("| Tier | Game | Bet | Book | Stake | EV | Model | Market |")
-    add("|---|---|---|---|---:|---:|---:|---:|")
+    add("| Tier | Game | Bet | Book | Stake | Units | EV | Model | Market |")
+    add("|---|---|---|---|---:|---:|---:|---:|---:|")
     for bet in result.bets:
         add(
             f"| {bet.confidence.value} | {bet.event.name} | "
             f"{bet.outcome}{'' if bet.line is None else f' {bet.line:+g}'} "
             f"({bet.american:+.0f}) | {bet.book} | ${bet.stake:,.0f} | "
+            f"{bet.stake / unit:.2f}u | "
             f"{bet.ev_pct:+.2f}% | {bet.model_probability:.1%} | {bet.implied:.1%} |"
         )
 
@@ -219,20 +234,33 @@ def markdown(result: SlateResult) -> str:
     return "\n".join(lines)
 
 
-def to_json(result: SlateResult) -> str:
-    """Machine-readable card."""
+def to_json(result: SlateResult, unit_size: float | None = None) -> str:
+    """Machine-readable card.
+
+    Carries everything needed to recompute stakes and exposure client-side
+    against a different bankroll, unit size, or Kelly multiplier -- this is
+    the export the web dashboard's staking calculator reads.
+    """
+    unit = unit_size if unit_size else result.bankroll / 100.0
     payload = {
         "generated_at": result.generated_at.isoformat(),
         "bankroll": result.bankroll,
+        "unit_size": unit,
         "prices_screened": result.considered,
         "total_stake": result.total_stake,
+        "total_stake_units": round(result.total_stake / unit, 3) if unit else None,
         "expected_profit": result.expected_profit,
         "expected_roi": result.expected_roi,
+        "card_stats": {
+            k: (list(v) if isinstance(v, tuple) else v)
+            for k, v in (result.card_stats or {}).items()
+        },
         "bets": [
             {
                 "event_id": b.event.event_id,
                 "event": b.event.name,
                 "league": b.event.league,
+                "sport": b.event.sport,
                 "start_time": b.event.start_time.isoformat(),
                 "market": b.market_type.value,
                 "subject": b.subject,
@@ -243,6 +271,8 @@ def to_json(result: SlateResult) -> str:
                 "american": b.american,
                 "decimal": round(b.decimal, 4),
                 "stake": b.stake,
+                "stake_units": round(b.stake / unit, 3) if unit else None,
+                "kelly_fraction": round(b.kelly_fraction, 5),
                 "confidence": b.confidence.value,
                 "ev": round(b.ev, 5),
                 "model_probability": round(b.model_probability, 5),
@@ -278,10 +308,6 @@ def to_json(result: SlateResult) -> str:
             }
             for o in result.opportunities
         ],
-        "card_stats": {
-            k: (list(v) if isinstance(v, tuple) else v)
-            for k, v in (result.card_stats or {}).items()
-        },
         "skipped": [{"what": w, "why": r} for w, r in result.skipped],
     }
     return json.dumps(payload, indent=2)

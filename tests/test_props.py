@@ -400,6 +400,39 @@ class TestTaxonomy:
         assert "strikeouts" in stats
         assert {p.stat for p in props_for("nba")} & {"points", "rebounds", "assists"}
 
+    def test_wnba_has_its_own_menu(self):
+        assert MarketType.PLAYER_PROP in markets_for("wnba")
+        assert MarketType.TEAM_TOTAL in markets_for("wnba")
+        # Thinner real-world coverage than the NBA: no alternates, no quarters.
+        assert MarketType.ALTERNATE_SPREAD not in markets_for("wnba")
+        assert MarketType.FIRST_QUARTER not in markets_for("wnba")
+
+    def test_wnba_props_are_registered(self):
+        stats = {p.stat for p in props_for("wnba")}
+        assert {"points", "rebounds", "assists"} <= stats
+
+    def test_shared_stat_names_do_not_collide_across_sports(self):
+        # The regression this whole taxonomy exists to prevent: WNBA and NBA
+        # both have a "points" prop, and without a sport-aware lookup key,
+        # whichever one loads last in the registry silently overwrites the
+        # other for every caller in the codebase -- meaning every NBA points
+        # prop would quietly inherit the WNBA's tighter limit and thinner
+        # trust once WNBA support was added.
+        nba = profile_for(MarketType.PLAYER_PROP, "points", sport="nba")
+        wnba = profile_for(MarketType.PLAYER_PROP, "points", sport="wnba")
+        assert nba.typical_limit != wnba.typical_limit
+        assert nba.typical_limit > wnba.typical_limit
+        assert nba.efficiency > wnba.efficiency
+
+    def test_wnba_props_are_softer_than_nba(self):
+        # Fewer books, fewer sharp bettors, smaller limits -- consistent with
+        # every other thin market in the taxonomy.
+        for stat in ("points", "rebounds", "assists"):
+            nba = profile_for(MarketType.PLAYER_PROP, stat, sport="nba")
+            wnba = profile_for(MarketType.PLAYER_PROP, stat, sport="wnba")
+            assert wnba.typical_limit < nba.typical_limit
+            assert wnba.min_edge_required >= nba.min_edge_required
+
     def test_softest_markets_are_ranked(self):
         softest = softest_markets(5)
         assert len(softest) == 5

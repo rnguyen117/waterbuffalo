@@ -241,6 +241,20 @@ PROP_PROFILES: list[PropProfile] = [
                 "correlated with the game total in a way books underprice"),
     PropProfile("nhl_points", "Player points", "player_points", "nhl",
                 0.50, 0.095, 750, 6),
+    # -- WNBA ----------------------------------------------------------------
+    # Same stats as the NBA, priced far worse: fewer books post it, fewer
+    # sharp bettors correct it, and limits run a fraction of the NBA's.
+    PropProfile("wnba_points", "Points", "points", "wnba", 0.52, 0.090, 750, 6),
+    PropProfile("wnba_rebounds", "Rebounds", "rebounds", "wnba", 0.46, 0.095, 500, 5),
+    PropProfile("wnba_assists", "Assists", "assists", "wnba", 0.44, 0.098, 500, 5,
+                "thin coverage; a starter's absence moves this hard and slowly"),
+    PropProfile("wnba_threes", "Three-pointers made", "threes_made", "wnba",
+                0.42, 0.105, 400, 5),
+    PropProfile("wnba_pra", "Points + rebounds + assists", "pra", "wnba",
+                0.44, 0.100, 400, 4),
+    PropProfile("wnba_steals", "Steals", "steals", "wnba", 0.34, 0.130, 200, 3,
+                "barely covered; real edges, tiny stakes"),
+    PropProfile("wnba_blocks", "Blocks", "blocks", "wnba", 0.34, 0.130, 200, 3),
 ]
 
 PROPS_BY_SPORT: dict[str, list[PropProfile]] = {}
@@ -248,6 +262,19 @@ for _p in PROP_PROFILES:
     PROPS_BY_SPORT.setdefault(_p.sport, []).append(_p)
 
 PROPS_BY_KEY: dict[str, PropProfile] = {p.key: p for p in PROP_PROFILES}
+
+# Keyed by (sport, stat), not stat alone. Several sports share stat names --
+# "points", "rebounds", "assists" mean one thing for the NBA and a
+# structurally softer, thinner-covered thing for the WNBA. A stat-only key
+# would let whichever sport's entry loads last silently overwrite the other's
+# efficiency and limit numbers for every sport that shares the name.
+PROPS_BY_SPORT_STAT: dict[tuple[str, str], PropProfile] = {
+    (p.sport, p.stat): p for p in PROP_PROFILES
+}
+
+# Stat-only fallback for callers that genuinely have no sport context. Kept
+# deliberately last-write-wins so behavior stays obvious, but every real call
+# site in this codebase passes a sport and should use PROPS_BY_SPORT_STAT.
 PROPS_BY_STAT: dict[str, PropProfile] = {p.stat: p for p in PROP_PROFILES}
 
 
@@ -287,15 +314,35 @@ SPORT_MARKETS: dict[str, list[MarketType]] = {
         MarketType.MONEYLINE, MarketType.SPREAD, MarketType.TOTAL,
         MarketType.TEAM_TOTAL, MarketType.FIRST_PERIOD, MarketType.PLAYER_PROP,
     ],
+    "wnba": [
+        # No alternate lines or quarters listed: real books cover the WNBA
+        # far thinner than the NBA, and claiming markets that mostly are not
+        # actually posted would just generate skips.
+        MarketType.SPREAD, MarketType.MONEYLINE, MarketType.TOTAL,
+        MarketType.TEAM_TOTAL, MarketType.FIRST_HALF_SPREAD,
+        MarketType.FIRST_HALF_TOTAL, MarketType.PLAYER_PROP,
+    ],
 }
 
 
 def profile_for(
-    market_type: MarketType, stat: str | None = None
+    market_type: MarketType, stat: str | None = None, sport: str | None = None
 ) -> MarketProfile:
-    """Look up how a market behaves, defaulting conservatively."""
+    """Look up how a market behaves, defaulting conservatively.
+
+    Pass ``sport`` whenever it is available. Several sports share stat names
+    -- "points" means something structurally different for the NBA (0.66
+    efficiency, $2,500 limit) than for the WNBA (0.52, $750). Without a sport,
+    the lookup falls back to whichever sport's profile happens to be
+    registered last, which is a real bug waiting to misprice one of the two.
+    """
     if market_type.is_prop and stat:
-        prop = PROPS_BY_STAT.get(stat.lower().replace(" ", "_"))
+        key = stat.lower().replace(" ", "_")
+        prop = None
+        if sport:
+            prop = PROPS_BY_SPORT_STAT.get((sport.lower(), key))
+        if prop is None:
+            prop = PROPS_BY_STAT.get(key)
         if prop:
             return prop.as_market_profile()
     profile = CORE_PROFILES.get(market_type)
