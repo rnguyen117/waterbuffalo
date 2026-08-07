@@ -156,16 +156,19 @@ def _cmd_card(args, cfg) -> int:
         return 1
 
     unit = cfg.bankroll.effective_unit_size
+    from .track.ledger import Ledger
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        scorecard = ledger.scorecard()
+        daily_pnl = ledger.daily_pnl_units(unit)
+    finally:
+        ledger.close()
+
     goal_state = None
     if cfg.goals.enabled:
         from .risk.goals import state_from_history
-        from .track.ledger import Ledger
 
-        ledger = Ledger(Path(cfg.data_dir) / "bets.db")
-        try:
-            daily_pnl = ledger.daily_pnl_units(unit)
-        finally:
-            ledger.close()
         goal_state = state_from_history(
             daily_pnl, cfg.goals.daily_goal_units, cfg.goals.min_risk_multiplier
         )
@@ -183,8 +186,9 @@ def _cmd_card(args, cfg) -> int:
     finally:
         history.close()
 
+    result.card_stats = dict(result.card_stats or {})
+    result.card_stats["scorecard"] = scorecard
     if goal_state is not None:
-        result.card_stats = dict(result.card_stats or {})
         result.card_stats["goal"] = {
             "daily_goal_units": cfg.goals.daily_goal_units,
             "banked_surplus_units": round(goal_state.banked_surplus, 4),

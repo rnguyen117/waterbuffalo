@@ -476,6 +476,56 @@
   }
   .backfill-note b { color: var(--accent); }
 
+  /* ---------- Scorecard / goal progress ---------- */
+
+  .scorecard-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 640px) {
+    .scorecard-panel { grid-template-columns: 1fr; }
+  }
+  .scorecard-block {
+    background: var(--bg-raised);
+    padding: 14px 16px 16px;
+  }
+  .scorecard-block .panel-label { margin-bottom: 12px; }
+  .scorecard-figures {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .scorecard-figures .figure { text-align: left; }
+  .scorecard-figures .v { font-size: 1.1rem; font-weight: 700; }
+  .scorecard-hint {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  .progress-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-inset);
+    border: 1px solid var(--line-soft);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.2s ease;
+  }
+  .progress-fill.is-full { background: var(--good); }
+
   .section-heading {
     display: flex;
     align-items: baseline;
@@ -533,6 +583,10 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+  }
+  .bet-when {
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
   }
   .tier-badge {
     display: inline-flex;
@@ -812,6 +866,28 @@
 
   <main class="main">
     <div class="summary-strip" id="summaryStrip"></div>
+    <div class="scorecard-panel" id="scorecardPanel" style="display:none;">
+      <div class="scorecard-block">
+        <p class="panel-label">Track record</p>
+        <div class="scorecard-figures">
+          <div class="figure"><div class="k">Record</div><div class="v" id="scRecord">&mdash;</div></div>
+          <div class="figure"><div class="k">Win rate</div><div class="v accent" id="scWinRate">&mdash;</div></div>
+          <div class="figure"><div class="k">Graded</div><div class="v" id="scGraded">&mdash;</div></div>
+        </div>
+        <p class="scorecard-hint">Settled bets in the local ledger as of the last <code>sharp-edge card --json</code> export &mdash; updates once a day when the card is regenerated.</p>
+      </div>
+      <div class="scorecard-block">
+        <p class="panel-label">Goal progress</p>
+        <div class="progress-bar"><div class="progress-fill" id="goalProgressFill" style="width:0%"></div></div>
+        <div class="scorecard-figures">
+          <div class="figure"><div class="k">Progress</div><div class="v accent" id="goalProgressPct">&mdash;</div></div>
+          <div class="figure"><div class="k">Banked</div><div class="v" id="goalBanked">&mdash;</div></div>
+          <div class="figure"><div class="k">Still needed</div><div class="v" id="goalRemaining">&mdash;</div></div>
+          <div class="figure"><div class="k">Next sizing</div><div class="v" id="goalRiskMult">&mdash;</div></div>
+        </div>
+        <p class="scorecard-hint" id="goalHint"></p>
+      </div>
+    </div>
     <div class="distribution-note" id="distributionNote"></div>
     <div class="backfill-note" id="backfillNote" style="display:none;"></div>
 
@@ -856,1409 +932,7 @@
 </div>
 
 <script>
-const DEMO_CARD = {
-  "generated_at": "2026-08-07T04:18:43.684993+00:00",
-  "bankroll": 10000.0,
-  "unit_size": 100.0,
-  "prices_screened": 9518,
-  "total_stake": 1199.98,
-  "total_stake_units": 12.0,
-  "expected_profit": 217.54666358258595,
-  "expected_roi": 0.18129190785061913,
-  "card_stats": {
-    "count": 10,
-    "backfilled": 2,
-    "mean_probability": 0.5173848840690959,
-    "mean_ev": 0.1776806655850039,
-    "markets": {
-      "player_prop": 8,
-      "spread": 1,
-      "first_half_spread": 1
-    },
-    "verifiable_share": 1.0,
-    "expected_hits": 5.173848840690959,
-    "expected_record": [
-      5.173848840690959,
-      4.826151159309041
-    ]
-  },
-  "bets": [
-    {
-      "event_id": "nfl-000",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "league": "NFL",
-      "sport": "nfl",
-      "start_time": "2026-08-07T12:23:00.062617+00:00",
-      "market": "player_prop",
-      "subject": "R. Delgado (EAG)",
-      "stat": "passing_yards",
-      "outcome": "Over",
-      "line": 209.5,
-      "book": "caesars",
-      "american": 165,
-      "decimal": 2.65,
-      "stake": 172.11,
-      "stake_units": 1.721,
-      "kelly_fraction": 0.01721,
-      "confidence": "A",
-      "ev": 0.23361,
-      "model_probability": 0.46551,
-      "market_probability": 0.37736,
-      "fair_probability": 0.49251,
-      "sigma_logit": 0.30009,
-      "books_priced": 8,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": -0.0513,
-          "rationale": "about 69% of tickets on passing yards take the over; the over carries a public premium"
-        }
-      ],
-      "notes": [
-        "the market's own 209.5 anchor implies a projection of 216.4 passing yards",
-        "EV 23.36%, lower bound 10.16%",
-        "8 books priced the anchor, median hold 8.9%",
-        "Passing yards: typical limit $3,000"
-      ]
-    },
-    {
-      "event_id": "nba-007",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-08T22:11:03.452489+00:00",
-      "market": "player_prop",
-      "subject": "M. Vasquez (NUG)",
-      "stat": "points",
-      "outcome": "Under",
-      "line": 18.5,
-      "book": "hardrock",
-      "american": 105,
-      "decimal": 2.05,
-      "stake": 172.11,
-      "stake_units": 1.721,
-      "kelly_fraction": 0.01721,
-      "confidence": "A",
-      "ev": 0.12128,
-      "model_probability": 0.54697,
-      "market_probability": 0.4878,
-      "fair_probability": 0.57793,
-      "sigma_logit": 0.26269,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": 0.03564,
-          "rationale": "about 74% of tickets on points take the over; the under is the unshaded side"
-        },
-        {
-          "name": "pace",
-          "weight": 0.5,
-          "adjustment": -0.03618,
-          "rationale": "projected pace 101.5 vs league 99.5 (+2.0% possessions)"
-        }
-      ],
-      "notes": [
-        "the market's own 18.5 anchor implies a projection of 17.7 points",
-        "EV 12.13%, lower bound 3.08%",
-        "9 books priced the anchor, median hold 8.1%",
-        "Points: typical limit $2,500"
-      ]
-    },
-    {
-      "event_id": "nba-004",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-09T12:01:20.238346+00:00",
-      "market": "player_prop",
-      "subject": "M. Vasquez (76E)",
-      "stat": "points",
-      "outcome": "Over",
-      "line": 17.5,
-      "book": "fanatics",
-      "american": 105,
-      "decimal": 2.05,
-      "stake": 71.71,
-      "stake_units": 0.717,
-      "kelly_fraction": 0.00717,
-      "confidence": "A",
-      "ev": 0.1354,
-      "model_probability": 0.55385,
-      "market_probability": 0.4878,
-      "fair_probability": 0.58719,
-      "sigma_logit": 0.2969,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": -0.0648,
-          "rationale": "about 74% of tickets on points take the over; the over carries a public premium"
-        }
-      ],
-      "notes": [
-        "the market's own 17.5 anchor implies a projection of 18.5 points",
-        "EV 13.54%, lower bound 3.33%",
-        "9 books priced the anchor, median hold 8.2%",
-        "Points: typical limit $2,500"
-      ]
-    },
-    {
-      "event_id": "nfl-006",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "league": "NFL",
-      "sport": "nfl",
-      "start_time": "2026-08-10T02:11:49.606094+00:00",
-      "market": "player_prop",
-      "subject": "R. Delgado (EAG)",
-      "stat": "passing_yards",
-      "outcome": "Under",
-      "line": 299.5,
-      "book": "espnbet",
-      "american": 145,
-      "decimal": 2.45,
-      "stake": 172.11,
-      "stake_units": 1.721,
-      "kelly_fraction": 0.01721,
-      "confidence": "A",
-      "ev": 0.24094,
-      "model_probability": 0.50651,
-      "market_probability": 0.40816,
-      "fair_probability": 0.53646,
-      "sigma_logit": 0.34444,
-      "books_priced": 8,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": 0.02821,
-          "rationale": "about 69% of tickets on passing yards take the over; the under is the unshaded side"
-        }
-      ],
-      "notes": [
-        "the market's own 299.5 anchor implies a projection of 301.8 passing yards",
-        "EV 24.09%, lower bound 9.92%",
-        "8 books priced the anchor, median hold 7.4%",
-        "Passing yards: typical limit $3,000"
-      ]
-    },
-    {
-      "event_id": "nba-004",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-09T12:01:20.238346+00:00",
-      "market": "player_prop",
-      "subject": "M. Vasquez (76E)",
-      "stat": "points",
-      "outcome": "Over",
-      "line": 18.5,
-      "book": "fanatics",
-      "american": 160,
-      "decimal": 2.6,
-      "stake": 71.71,
-      "stake_units": 0.717,
-      "kelly_fraction": 0.00717,
-      "confidence": "A",
-      "ev": 0.20359,
-      "model_probability": 0.46292,
-      "market_probability": 0.38462,
-      "fair_probability": 0.49688,
-      "sigma_logit": 0.36222,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": -0.0648,
-          "rationale": "about 74% of tickets on points take the over; the over carries a public premium"
-        }
-      ],
-      "notes": [
-        "the market's own 17.5 anchor implies a projection of 18.5 points",
-        "EV 20.36%, lower bound 4.80%",
-        "9 books priced the anchor, median hold 8.2%",
-        "Points: typical limit $2,500",
-        "alternate 1 away from the anchor -- the fair price is extrapolated, so confidence and stake are reduced"
-      ]
-    },
-    {
-      "event_id": "nba-001",
-      "event": "Boston Celtics @ Phoenix Suns",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-08T22:25:17.832940+00:00",
-      "market": "player_prop",
-      "subject": "M. Vasquez (SUN)",
-      "stat": "points",
-      "outcome": "Over",
-      "line": 22.5,
-      "book": "hardrock",
-      "american": 135,
-      "decimal": 2.35,
-      "stake": 172.11,
-      "stake_units": 1.721,
-      "kelly_fraction": 0.01721,
-      "confidence": "A",
-      "ev": 0.26849,
-      "model_probability": 0.53978,
-      "market_probability": 0.42553,
-      "fair_probability": 0.5735,
-      "sigma_logit": 0.45059,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": -0.0648,
-          "rationale": "about 74% of tickets on points take the over; the over carries a public premium"
-        },
-        {
-          "name": "pace",
-          "weight": 0.5,
-          "adjustment": -0.0597,
-          "rationale": "projected pace 96.2 vs league 99.5 (-3.3% possessions)"
-        }
-      ],
-      "notes": [
-        "the market's own 22.5 anchor implies a projection of 23.4 points",
-        "EV 26.85%, lower bound 9.04%",
-        "9 books priced the anchor, median hold 7.8%",
-        "Points: typical limit $2,500"
-      ]
-    },
-    {
-      "event_id": "nfl-009",
-      "event": "Los Angeles Chargers @ New York Jets",
-      "league": "NFL",
-      "sport": "nfl",
-      "start_time": "2026-08-07T11:43:48.744860+00:00",
-      "market": "spread",
-      "subject": null,
-      "stat": null,
-      "outcome": "New York Jets",
-      "line": 1.5,
-      "book": "espnbet",
-      "american": 105,
-      "decimal": 2.05,
-      "stake": 130.47,
-      "stake_units": 1.305,
-      "kelly_fraction": 0.01305,
-      "confidence": "B",
-      "ev": 0.04272,
-      "model_probability": 0.50864,
-      "market_probability": 0.4878,
-      "fair_probability": 0.49879,
-      "sigma_logit": 0.07263,
-      "books_priced": 14,
-      "signals": [
-        {
-          "name": "stale_line",
-          "weight": 0.95,
-          "adjustment": 0.18144,
-          "rationale": "espnbet still posting a number +1.5 points off the sharp consensus -- take the price before it moves"
-        },
-        {
-          "name": "retail_shading",
-          "weight": 0.2886,
-          "adjustment": 0.03092,
-          "rationale": "retail books price this 0.062 log-odds below the sharp number -- this is the unpopular side"
-        },
-        {
-          "name": "handle_divergence",
-          "weight": 0.285,
-          "adjustment": -0.06045,
-          "rationale": "New York Jets: 25% of money on 44% of tickets"
-        },
-        {
-          "name": "schedule_spot",
-          "weight": 0.5,
-          "adjustment": 0.10882,
-          "rationale": "opponent in a lookahead spot (+0.9 pts)"
-        }
-      ],
-      "notes": [
-        "espnbet is +1.5 points off the sharp number",
-        "best of 13 books, 220 cents of spread",
-        "EV 4.27%, lower bound 1.76%",
-        "market hold 4.25%",
-        "provisional sizing limited by 0.25 Kelly; final stake set by the slate optimizer",
-        "Point spread: efficiency 0.90, typical limit $25,000",
-        "the most efficiently priced market in sports",
-        "ESPN Bet limits are around $1,000"
-      ]
-    },
-    {
-      "event_id": "nfl-000",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "league": "NFL",
-      "sport": "nfl",
-      "start_time": "2026-08-07T12:23:00.062617+00:00",
-      "market": "first_half_spread",
-      "subject": null,
-      "stat": null,
-      "outcome": "Detroit Lions",
-      "line": -1.0,
-      "book": "fanduel",
-      "american": -100,
-      "decimal": 2.0,
-      "stake": 94.23,
-      "stake_units": 0.942,
-      "kelly_fraction": 0.00942,
-      "confidence": "C",
-      "ev": 0.03749,
-      "model_probability": 0.51874,
-      "market_probability": 0.5,
-      "fair_probability": 0.51206,
-      "sigma_logit": 0.07359,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "retail_shading",
-          "weight": 0.3699,
-          "adjustment": 0.03964,
-          "rationale": "retail books price this 0.079 log-odds below the sharp number -- this is the unpopular side"
-        },
-        {
-          "name": "injuries",
-          "weight": 0.9714,
-          "adjustment": 0.77637,
-          "rationale": "J. Reed (out, QB); net +6.5 pts, line has moved +0.0, +6.5 pts still unpriced"
-        },
-        {
-          "name": "breaking_news",
-          "weight": 0.8288,
-          "adjustment": -0.18138,
-          "rationale": "5 min ago: Devin Brooks ruled out for tonight's game with a knee injury [injury] -- slow books may not have repriced"
-        },
-        {
-          "name": "rest",
-          "weight": 0.55,
-          "adjustment": -0.09672,
-          "rationale": "on a short week (-0.8 pts)"
-        }
-      ],
-      "notes": [
-        "best of 8 books, 20 cents of spread",
-        "EV 3.75%, lower bound 1.27%",
-        "market hold 4.55%",
-        "provisional sizing limited by 0.25 Kelly; final stake set by the slate optimizer",
-        "First half spread: efficiency 0.74, typical limit $5,000"
-      ]
-    },
-    {
-      "event_id": "nba-004",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-09T12:01:20.238346+00:00",
-      "market": "player_prop",
-      "subject": "M. Vasquez (HEA)",
-      "stat": "pra",
-      "outcome": "Under",
-      "line": 17.5,
-      "book": "betmgm",
-      "american": 155,
-      "decimal": 2.55,
-      "stake": 71.71,
-      "stake_units": 0.717,
-      "kelly_fraction": 0.00717,
-      "confidence": "A",
-      "ev": 0.21643,
-      "model_probability": 0.47703,
-      "market_probability": 0.39216,
-      "fair_probability": 0.50591,
-      "sigma_logit": 0.2689,
-      "books_priced": 9,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": 0.0297,
-          "rationale": "about 70% of tickets on pra take the over; the under is the unshaded side"
-        }
-      ],
-      "notes": [
-        "the market's own 17.5 anchor implies a projection of 17.4 pra",
-        "EV 21.64%, lower bound 10.19%",
-        "9 books priced the anchor, median hold 9.0%",
-        "Points + rebounds + assists: typical limit $1,000"
-      ]
-    },
-    {
-      "event_id": "nba-004",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "league": "NBA",
-      "sport": "nba",
-      "start_time": "2026-08-09T12:01:20.238346+00:00",
-      "market": "player_prop",
-      "subject": "J. Ferreira (76E)",
-      "stat": "points",
-      "outcome": "Under",
-      "line": 17.5,
-      "book": "caesars",
-      "american": 115,
-      "decimal": 2.15,
-      "stake": 71.71,
-      "stake_units": 0.717,
-      "kelly_fraction": 0.00717,
-      "confidence": "A",
-      "ev": 0.27686,
-      "model_probability": 0.59389,
-      "market_probability": 0.46512,
-      "fair_probability": 0.62153,
-      "sigma_logit": 0.48102,
-      "books_priced": 8,
-      "signals": [
-        {
-          "name": "prop_public_bias",
-          "weight": 0.6,
-          "adjustment": 0.03564,
-          "rationale": "about 74% of tickets on points take the over; the under is the unshaded side"
-        }
-      ],
-      "notes": [
-        "the market's own 16.5 anchor implies a projection of 16.2 points",
-        "EV 27.69%, lower bound 10.50%",
-        "8 books priced the anchor, median hold 7.4%",
-        "Points: typical limit $2,500",
-        "alternate 1 away from the anchor -- the fair price is extrapolated, so confidence and stake are reduced"
-      ]
-    }
-  ],
-  "opportunities": [
-    {
-      "kind": "middle",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "betmgm",
-          "outcome": "Philadelphia Eagles",
-          "american": -105,
-          "line": 3.0
-        },
-        {
-          "book": "caesars",
-          "outcome": "Detroit Lions",
-          "american": 105,
-          "line": -2.0
-        }
-      ],
-      "profit_pct": 0.1044,
-      "note": "1-point window, hits 10.4% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Philadelphia Eagles",
-          "american": -105,
-          "line": 3.0
-        },
-        {
-          "book": "caesars",
-          "outcome": "Detroit Lions",
-          "american": 105,
-          "line": -2.0
-        }
-      ],
-      "profit_pct": 0.1044,
-      "note": "1-point window, hits 10.4% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Detroit Lions @ Philadelphia Eagles",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "betmgm",
-          "outcome": "Philadelphia Eagles",
-          "american": -105,
-          "line": 3.0
-        },
-        {
-          "book": "betfair",
-          "outcome": "Detroit Lions",
-          "american": 100,
-          "line": -2.0
-        }
-      ],
-      "profit_pct": 0.09634,
-      "note": "1-point window, hits 10.4% of the time, costs 1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Indiana Fever @ Chicago Sky",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Chicago Sky",
-          "american": 110,
-          "line": -2.0
-        },
-        {
-          "book": "bookmaker",
-          "outcome": "Indiana Fever",
-          "american": -100,
-          "line": 3.0
-        }
-      ],
-      "profit_pct": 0.08775,
-      "note": "1-point window, hits 7.3% of the time, costs -2.38% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Indiana Fever @ Chicago Sky",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Chicago Sky",
-          "american": 110,
-          "line": -2.0
-        },
-        {
-          "book": "betfair",
-          "outcome": "Indiana Fever",
-          "american": -100,
-          "line": 3.0
-        }
-      ],
-      "profit_pct": 0.08775,
-      "note": "1-point window, hits 7.3% of the time, costs -2.38% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Indiana Fever @ Chicago Sky",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Chicago Sky",
-          "american": 110,
-          "line": -2.0
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Indiana Fever",
-          "american": -100,
-          "line": 3.0
-        }
-      ],
-      "profit_pct": 0.08775,
-      "note": "1-point window, hits 7.3% of the time, costs -2.38% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Philadelphia 76ers",
-          "american": 105,
-          "line": -8.0
-        },
-        {
-          "book": "bookmaker",
-          "outcome": "Miami Heat",
-          "american": 100,
-          "line": 9.5
-        }
-      ],
-      "profit_pct": 0.0761,
-      "note": "1.5-point window, hits 6.9% of the time, costs -1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Philadelphia 76ers",
-          "american": 105,
-          "line": -8.0
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Miami Heat",
-          "american": -100,
-          "line": 9.5
-        }
-      ],
-      "profit_pct": 0.0761,
-      "note": "1.5-point window, hits 6.9% of the time, costs -1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Phoenix Mercury @ Las Vegas Aces",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Las Vegas Aces",
-          "american": -105,
-          "line": 6.0
-        },
-        {
-          "book": "caesars",
-          "outcome": "Phoenix Mercury",
-          "american": 105,
-          "line": -4.5
-        }
-      ],
-      "profit_pct": 0.07355,
-      "note": "1.5-point window, hits 7.3% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Cincinnati Bengals @ Green Bay Packers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "bovada",
-          "outcome": "Green Bay Packers",
-          "american": -110,
-          "line": 6.0
-        },
-        {
-          "book": "draftkings",
-          "outcome": "Cincinnati Bengals",
-          "american": 105,
-          "line": -5.0
-        }
-      ],
-      "profit_pct": 0.07054,
-      "note": "1-point window, hits 7.7% of the time, costs 1.16% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "espnbet",
-          "outcome": "Phoenix Suns",
-          "american": -100,
-          "line": 10.5
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Denver Nuggets",
-          "american": -100,
-          "line": -9.5
-        }
-      ],
-      "profit_pct": 0.06903,
-      "note": "1-point window, hits 6.9% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Miami Heat @ Philadelphia 76ers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Philadelphia 76ers",
-          "american": 105,
-          "line": -8.0
-        },
-        {
-          "book": "circa",
-          "outcome": "Miami Heat",
-          "american": -105,
-          "line": 9.5
-        }
-      ],
-      "profit_pct": 0.06879,
-      "note": "1.5-point window, hits 6.9% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Phoenix Mercury @ Las Vegas Aces",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Las Vegas Aces",
-          "american": -105,
-          "line": 6.0
-        },
-        {
-          "book": "betfair",
-          "outcome": "Phoenix Mercury",
-          "american": -100,
-          "line": -4.5
-        }
-      ],
-      "profit_pct": 0.06606,
-      "note": "1.5-point window, hits 7.3% of the time, costs 1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Phoenix Mercury @ Las Vegas Aces",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "hardrock",
-          "outcome": "Las Vegas Aces",
-          "american": -105,
-          "line": 6.0
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Phoenix Mercury",
-          "american": -100,
-          "line": -4.5
-        }
-      ],
-      "profit_pct": 0.06606,
-      "note": "1.5-point window, hits 7.3% of the time, costs 1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Cincinnati Bengals @ Green Bay Packers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "bovada",
-          "outcome": "Green Bay Packers",
-          "american": -110,
-          "line": 6.0
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Cincinnati Bengals",
-          "american": -100,
-          "line": -5.0
-        }
-      ],
-      "profit_pct": 0.06298,
-      "note": "1-point window, hits 7.7% of the time, costs 2.38% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Cincinnati Bengals @ Green Bay Packers",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "bovada",
-          "outcome": "Green Bay Packers",
-          "american": -110,
-          "line": 6.0
-        },
-        {
-          "book": "betmgm",
-          "outcome": "Cincinnati Bengals",
-          "american": -100,
-          "line": -5.0
-        }
-      ],
-      "profit_pct": 0.06298,
-      "note": "1-point window, hits 7.7% of the time, costs 2.38% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "betmgm",
-          "outcome": "Phoenix Suns",
-          "american": -105,
-          "line": 10.5
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Denver Nuggets",
-          "american": -100,
-          "line": -9.5
-        }
-      ],
-      "profit_pct": 0.06171,
-      "note": "1-point window, hits 6.9% of the time, costs 1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "espnbet",
-          "outcome": "Phoenix Suns",
-          "american": -100,
-          "line": 10.5
-        },
-        {
-          "book": "circa",
-          "outcome": "Denver Nuggets",
-          "american": -105,
-          "line": -9.5
-        }
-      ],
-      "profit_pct": 0.06171,
-      "note": "1-point window, hits 6.9% of the time, costs 1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Los Angeles Chargers @ New York Jets",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "espnbet",
-          "outcome": "New York Jets",
-          "american": 105,
-          "line": 1.5
-        },
-        {
-          "book": "prophetx",
-          "outcome": "Los Angeles Chargers",
-          "american": 100,
-          "line": -0.0
-        }
-      ],
-      "profit_pct": 0.05084,
-      "note": "1.5-point window, hits 4.4% of the time, costs -1.22% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Los Angeles Chargers @ New York Jets",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "espnbet",
-          "outcome": "New York Jets",
-          "american": 105,
-          "line": 1.5
-        },
-        {
-          "book": "circa",
-          "outcome": "Los Angeles Chargers",
-          "american": -105,
-          "line": -0.0
-        }
-      ],
-      "profit_pct": 0.04396,
-      "note": "1.5-point window, hits 4.4% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "middle",
-      "event": "Los Angeles Chargers @ New York Jets",
-      "market": "spread",
-      "legs": [
-        {
-          "book": "espnbet",
-          "outcome": "New York Jets",
-          "american": 105,
-          "line": 1.5
-        },
-        {
-          "book": "bookmaker",
-          "outcome": "Los Angeles Chargers",
-          "american": -105,
-          "line": -0.0
-        }
-      ],
-      "profit_pct": 0.04396,
-      "note": "1.5-point window, hits 4.4% of the time, costs 0.00% when it misses"
-    },
-    {
-      "kind": "arbitrage",
-      "event": "Connecticut Sun @ Los Angeles Sparks",
-      "market": "total",
-      "legs": [
-        {
-          "book": "bookmaker",
-          "outcome": "Over",
-          "american": -100,
-          "line": 162.5
-        },
-        {
-          "book": "hardrock",
-          "outcome": "Under",
-          "american": 115,
-          "line": 162.5
-        }
-      ],
-      "profit_pct": 0.03614,
-      "note": "guaranteed 3.61% across 2 books; stake limited by the smallest book's limit"
-    },
-    {
-      "kind": "low_hold",
-      "event": "Connecticut Sun @ Los Angeles Sparks",
-      "market": "total",
-      "legs": [
-        {
-          "book": "bookmaker",
-          "outcome": "Over",
-          "american": -100,
-          "line": 162.5
-        },
-        {
-          "book": "hardrock",
-          "outcome": "Under",
-          "american": 115,
-          "line": 162.5
-        }
-      ],
-      "profit_pct": 0.03614,
-      "note": "combined hold of only -3.61% across books"
-    },
-    {
-      "kind": "arbitrage",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "market": "total",
-      "legs": [
-        {
-          "book": "betmgm",
-          "outcome": "Over",
-          "american": -100,
-          "line": 223.0
-        },
-        {
-          "book": "espnbet",
-          "outcome": "Under",
-          "american": 115,
-          "line": 221.0
-        }
-      ],
-      "profit_pct": 0.03614,
-      "note": "guaranteed 3.61% across 2 books; stake limited by the smallest book's limit"
-    },
-    {
-      "kind": "low_hold",
-      "event": "Denver Nuggets @ Phoenix Suns",
-      "market": "total",
-      "legs": [
-        {
-          "book": "betmgm",
-          "outcome": "Over",
-          "american": -100,
-          "line": 223.0
-        },
-        {
-          "book": "espnbet",
-          "outcome": "Under",
-          "american": 115,
-          "line": 221.0
-        }
-      ],
-      "profit_pct": 0.03614,
-      "note": "combined hold of only -3.61% across books"
-    }
-  ],
-  "skipped": [
-    {
-      "what": "R. Delgado (EAG) completions Under 22.5",
-      "why": "EV of 65% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Delgado (EAG) completions Under 20.5",
-      "why": "EV of 98% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (SUN) points Under 25.5",
-      "why": "EV of 47% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (SUN) points Under 24.5",
-      "why": "EV of 55% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (SUN) points Under 26.5",
-      "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) points Over 18.5",
-      "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (CEL) points Under 28.5",
-      "why": "EV of 43% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (CEL) points Under 26.5",
-      "why": "EV of 61% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (CEL) pra Over 37.5",
-      "why": "EV of 35% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (CEL) pra Over 38.5",
-      "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (CEL) points Under 20.5",
-      "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (CEL) points Under 19.5",
-      "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Vasquez (CEL) pra Under 26.5",
-      "why": "EV of 47% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Vasquez (CEL) pra Under 24.5",
-      "why": "EV of 64% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Vasquez (CEL) pra Under 25.5",
-      "why": "EV of 56% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (CEL) points Under 22.5",
-      "why": "EV of 35% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (CEL) points Under 21.5",
-      "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (CEL) pra Under 34.5",
-      "why": "EV of 47% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (CEL) pra Under 33.5",
-      "why": "EV of 56% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (CEL) pra Under 34.5",
-      "why": "EV of 56% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (CEL) pra Under 32.5",
-      "why": "EV of 76% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (CEL) pra Under 33.5",
-      "why": "EV of 64% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SPA) points Over 18.5",
-      "why": "EV of 43% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Over 27.5",
-      "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Under 26.5",
-      "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Under 24.5",
-      "why": "EV of 69% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Under 25.5",
-      "why": "EV of 60% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Under 27.5",
-      "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SPA) pra Under 28.5",
-      "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Whitfeld (SPA) points Over 17.5",
-      "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Whitfeld (SPA) points Over 19.5",
-      "why": "EV of 72% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Achebe (SPA) rebounds Over 6.5",
-      "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "N. Abadi (PAC) receptions Under 3.5",
-      "why": "EV of 44% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) points Over 25.5",
-      "why": "EV of 55% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) points Over 23.5",
-      "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) points Over 26.5",
-      "why": "EV of 70% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) threes_made Under 0.5",
-      "why": "EV of 37% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) pra Over 30.5",
-      "why": "EV of 39% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (76E) pra Over 31.5",
-      "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (76E) points Under 29.5",
-      "why": "EV of 65% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (76E) points Under 27.5",
-      "why": "EV of 90% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (76E) points Under 30.5",
-      "why": "EV of 53% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (76E) pra Under 32.5",
-      "why": "EV of 53% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (76E) points Under 16.5",
-      "why": "EV of 39% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (76E) points Under 16.5",
-      "why": "EV of 37% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (76E) points Under 14.5",
-      "why": "EV of 56% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "A. Brennan (HEA) points Under 10.5",
-      "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Vasquez (HEA) points Over 27.5",
-      "why": "EV of 50% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (HEA) rebounds Under 3.5",
-      "why": "EV of 48% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (HEA) pra Over 36.5",
-      "why": "EV of 48% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (HEA) pra Over 35.5",
-      "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Over 27.5",
-      "why": "EV of 63% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Over 26.5",
-      "why": "EV of 55% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Over 29.5",
-      "why": "EV of 93% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Under 27.5",
-      "why": "EV of 48% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Under 25.5",
-      "why": "EV of 69% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) points Under 28.5",
-      "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 29.5",
-      "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 31.5",
-      "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 29.5",
-      "why": "EV of 35% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 30.5",
-      "why": "EV of 53% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 29.5",
-      "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 28.5",
-      "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (SKY) pra Over 30.5",
-      "why": "EV of 58% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SKY) points Over 29.5",
-      "why": "EV of 55% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (SKY) points Over 28.5",
-      "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Novak (SKY) pra Under 13.5",
-      "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Novak (SKY) pra Under 14.5",
-      "why": "EV of 39% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Novak (SKY) pra Over 16.5",
-      "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Achebe (SKY) pra Under 27.5",
-      "why": "EV of 71% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Achebe (SKY) pra Under 26.5",
-      "why": "EV of 104% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Achebe (SKY) pra Under 28.5",
-      "why": "EV of 71% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Achebe (SKY) pra Under 29.5",
-      "why": "EV of 60% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (SUN) pra Over 34.5",
-      "why": "EV of 66% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (SUN) pra Over 35.5",
-      "why": "EV of 90% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (SUN) pra Over 36.5",
-      "why": "EV of 109% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) points Under 19.5",
-      "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) points Under 18.5",
-      "why": "EV of 58% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) points Over 19.5",
-      "why": "EV of 61% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Over 36.5",
-      "why": "EV of 64% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Over 34.5",
-      "why": "EV of 53% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Over 35.5",
-      "why": "EV of 64% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Under 36.5",
-      "why": "EV of 51% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Under 34.5",
-      "why": "EV of 78% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "J. Ferreira (SUN) pra Under 35.5",
-      "why": "EV of 65% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (NUG) points Under 19.5",
-      "why": "EV of 47% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (NUG) points Under 18.5",
-      "why": "EV of 57% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (NUG) points Under 20.5",
-      "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (NUG) points Over 19.5",
-      "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "D. Okafor (NUG) points Over 21.5",
-      "why": "EV of 61% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (NUG) points Under 26.5",
-      "why": "EV of 57% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Kowalski (NUG) points Under 25.5",
-      "why": "EV of 66% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (ACE) assists Over 0.5",
-      "why": "EV of 37% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "R. Alvarado (ACE) assists Over 0.5",
-      "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (ACE) pra Under 23.5",
-      "why": "EV of 62% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Whitfeld (ACE) pra Under 28.5",
-      "why": "EV of 70% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "T. Whitfeld (ACE) pra Under 30.5",
-      "why": "EV of 52% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Novak (ACE) pra Under 22.5",
-      "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "M. Novak (ACE) pra Over 24.5",
-      "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    },
-    {
-      "what": "K. Sunderland (MER) threes_made Under 0.5",
-      "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"
-    }
-  ]
-};
+const DEMO_CARD = {"generated_at": "2026-08-07T05:12:01.273620+00:00", "bankroll": 10000.0, "unit_size": 100.0, "prices_screened": 6274, "total_stake": 1200.0, "total_stake_units": 12.0, "expected_profit": 249.9224653581069, "expected_roi": 0.20826872113175576, "card_stats": {"count": 10, "backfilled": 3, "mean_probability": 0.5164601238185311, "mean_ev": 0.21056031061704356, "markets": {"player_prop": 9, "spread": 1}, "verifiable_share": 1.0, "expected_hits": 5.164601238185311, "expected_record": [5.164601238185311, 4.835398761814689], "scorecard": {"wins": 15, "losses": 9, "graded": 24, "win_rate": 0.625}, "goal": {"daily_goal_units": 3.0, "banked_surplus_units": 0.6091, "effective_goal_units": 2.3909, "progress_fraction": 0.203, "risk_multiplier": 0.8782}}, "bets": [{"event_id": "nba-001", "event": "Miami Heat @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-08T09:49:52.428166+00:00", "market": "player_prop", "subject": "D. Okafor (JAZ)", "stat": "assists", "outcome": "Over", "line": 3.5, "book": "fanduel", "american": 120, "decimal": 2.2, "stake": 60.0, "stake_units": 0.6, "kelly_fraction": 0.006, "confidence": "A", "ev": 0.12015, "model_probability": 0.50916, "market_probability": 0.45455, "fair_probability": 0.54017, "sigma_logit": 0.19916, "books_priced": 9, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": -0.0486, "rationale": "about 68% of tickets on assists take the over; the over carries a public premium"}], "notes": ["the market's own 3.5 anchor implies a projection of 4.0 assists", "EV 12.01%, lower bound 4.64%", "9 books priced the anchor, median hold 7.3%", "Assists: typical limit $1,500", "most sensitive stat to a teammate's absence"]}, {"event_id": "nfl-000", "event": "Philadelphia Eagles @ Houston Texans", "league": "NFL", "sport": "nfl", "start_time": "2026-08-09T16:41:22.342083+00:00", "market": "player_prop", "subject": "R. Delgado (EAG)", "stat": "passing_yards", "outcome": "Under", "line": 254.5, "book": "fanduel", "american": 135, "decimal": 2.35, "stake": 180.0, "stake_units": 1.8, "kelly_fraction": 0.018, "confidence": "A", "ev": 0.24458, "model_probability": 0.52961, "market_probability": 0.42553, "fair_probability": 0.5547, "sigma_logit": 0.40053, "books_priced": 9, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.02821, "rationale": "about 69% of tickets on passing yards take the over; the under is the unshaded side"}], "notes": ["the market's own 254.5 anchor implies a projection of 252.4 passing yards", "EV 24.46%, lower bound 8.62%", "9 books priced the anchor, median hold 8.3%", "Passing yards: typical limit $3,000"]}, {"event_id": "nba-001", "event": "Miami Heat @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-08T09:49:52.428166+00:00", "market": "player_prop", "subject": "A. Brennan (JAZ)", "stat": "pra", "outcome": "Under", "line": 38.5, "book": "espnbet", "american": 165, "decimal": 2.65, "stake": 60.0, "stake_units": 0.6, "kelly_fraction": 0.006, "confidence": "A", "ev": 0.2764, "model_probability": 0.48166, "market_probability": 0.37736, "fair_probability": 0.50739, "sigma_logit": 0.25483, "books_priced": 8, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.0297, "rationale": "about 70% of tickets on pra take the over; the under is the unshaded side"}], "notes": ["the market's own 38.5 anchor implies a projection of 38.4 pra", "EV 27.64%, lower bound 16.34%", "8 books priced the anchor, median hold 6.7%", "Points + rebounds + assists: typical limit $1,000"]}, {"event_id": "nba-005", "event": "Minnesota Timberwolves @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-07T13:09:24.329625+00:00", "market": "player_prop", "subject": "J. Ferreira (TIM)", "stat": "pra", "outcome": "Over", "line": 10.5, "book": "hardrock", "american": 135, "decimal": 2.35, "stake": 180.0, "stake_units": 1.8, "kelly_fraction": 0.018, "confidence": "A", "ev": 0.17394, "model_probability": 0.49955, "market_probability": 0.42553, "fair_probability": 0.52976, "sigma_logit": 0.30101, "books_priced": 8, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": -0.054, "rationale": "about 70% of tickets on pra take the over; the over carries a public premium"}, {"name": "pace", "weight": 0.5, "adjustment": 0.07779, "rationale": "projected pace 103.8 vs league 99.5 (+4.3% possessions)"}], "notes": ["the market's own 10.5 anchor implies a projection of 10.8 pra", "EV 17.39%, lower bound 5.52%", "8 books priced the anchor, median hold 8.8%", "Points + rebounds + assists: typical limit $1,000"]}, {"event_id": "nfl-004", "event": "Houston Texans @ Cincinnati Bengals", "league": "NFL", "sport": "nfl", "start_time": "2026-08-08T03:29:51.350852+00:00", "market": "player_prop", "subject": "R. Delgado (BEN)", "stat": "completions", "outcome": "Under", "line": 22.5, "book": "fanduel", "american": 170, "decimal": 2.7, "stake": 180.0, "stake_units": 1.8, "kelly_fraction": 0.018, "confidence": "A", "ev": 0.28042, "model_probability": 0.47423, "market_probability": 0.37037, "fair_probability": 0.50255, "sigma_logit": 0.39387, "books_priced": 8, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.0297, "rationale": "about 70% of tickets on completions take the over; the under is the unshaded side"}], "notes": ["the market's own 22.5 anchor implies a projection of 22.7 completions", "EV 28.04%, lower bound 10.39%", "8 books priced the anchor, median hold 6.8%", "Completions: typical limit $1,500"]}, {"event_id": "wnba-002", "event": "Phoenix Mercury @ Los Angeles Sparks", "league": "WNBA", "sport": "wnba", "start_time": "2026-08-07T22:37:57.725896+00:00", "market": "player_prop", "subject": "M. Novak (SPA)", "stat": "points", "outcome": "Over", "line": 10.5, "book": "betrivers", "american": 160, "decimal": 2.6, "stake": 180.0, "stake_units": 1.8, "kelly_fraction": 0.018, "confidence": "A", "ev": 0.16817, "model_probability": 0.4493, "market_probability": 0.38462, "fair_probability": 0.47916, "sigma_logit": 0.31184, "books_priced": 8, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": -0.0648, "rationale": "about 74% of tickets on points take the over; the over carries a public premium"}, {"name": "pace", "weight": 0.5, "adjustment": 0.07024, "rationale": "projected pace 85.2 vs league 82.0 (+3.9% possessions)"}], "notes": ["the market's own 10.5 anchor implies a projection of 10.3 points", "EV 16.82%, lower bound 3.49%", "8 books priced the anchor, median hold 7.1%", "Points: typical limit $750"]}, {"event_id": "tennis-003", "event": "Lucia Ferraro @ Mateo Alcaraz", "league": "TENNIS", "sport": "tennis", "start_time": "2026-08-09T15:42:56.480483+00:00", "market": "spread", "subject": null, "stat": null, "outcome": "Mateo Alcaraz", "line": 1.5, "book": "fanatics", "american": -115, "decimal": 1.8696, "stake": 180.0, "stake_units": 1.8, "kelly_fraction": 0.018, "confidence": "A", "ev": 0.16278, "model_probability": 0.62195, "market_probability": 0.53488, "fair_probability": 0.50153, "sigma_logit": 0.16032, "books_priced": 14, "signals": [{"name": "stale_line", "weight": 0.8075, "adjustment": 0.58749, "rationale": "fanatics still posting a number +1.5 points off the sharp consensus -- take the price before it moves"}, {"name": "retail_shading", "weight": 0.2822, "adjustment": 0.03023, "rationale": "retail books price this 0.060 log-odds below the sharp number -- this is the unpopular side"}, {"name": "handle_divergence", "weight": 0.198, "adjustment": -0.19473, "rationale": "Mateo Alcaraz: 41% of money on 54% of tickets"}], "notes": ["fanatics is +1.5 points off the sharp number", "best of 13 books, 20 cents of spread", "EV 16.28%, lower bound 11.47%", "market hold 3.93%", "provisional sizing limited by 0.219545 Kelly; final stake set by the slate optimizer", "Point spread: efficiency 0.90, typical limit $25,000", "the most efficiently priced market in sports", "Fanatics limits are around $1,000"]}, {"event_id": "nba-001", "event": "Miami Heat @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-08T09:49:52.428166+00:00", "market": "player_prop", "subject": "M. Vasquez (JAZ)", "stat": "rebounds", "outcome": "Under", "line": 4.5, "book": "espnbet", "american": -120, "decimal": 1.8333, "stake": 60.0, "stake_units": 0.6, "kelly_fraction": 0.006, "confidence": "A", "ev": 0.13094, "model_probability": 0.61687, "market_probability": 0.54545, "fair_probability": 0.64151, "sigma_logit": 0.29448, "books_priced": 9, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.02673, "rationale": "about 68% of tickets on rebounds take the over; the under is the unshaded side"}], "notes": ["the market's own 4.5 anchor implies a projection of 3.9 rebounds", "EV 13.09%, lower bound 4.32%", "9 books priced the anchor, median hold 8.7%", "Rebounds: typical limit $1,500"]}, {"event_id": "nba-001", "event": "Miami Heat @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-08T09:49:52.428166+00:00", "market": "player_prop", "subject": "M. Vasquez (JAZ)", "stat": "rebounds", "outcome": "Under", "line": 3.5, "book": "espnbet", "american": 195, "decimal": 2.95, "stake": 60.0, "stake_units": 0.6, "kelly_fraction": 0.006, "confidence": "A", "ev": 0.31162, "model_probability": 0.44462, "market_probability": 0.33898, "fair_probability": 0.47083, "sigma_logit": 0.35927, "books_priced": 9, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.02673, "rationale": "about 68% of tickets on rebounds take the over; the under is the unshaded side"}], "notes": ["the market's own 4.5 anchor implies a projection of 3.9 rebounds", "EV 31.16%, lower bound 13.84%", "9 books priced the anchor, median hold 8.7%", "Rebounds: typical limit $1,500", "alternate 1 away from the anchor -- the fair price is extrapolated, so confidence and stake are reduced"]}, {"event_id": "nba-001", "event": "Miami Heat @ Utah Jazz", "league": "NBA", "sport": "nba", "start_time": "2026-08-08T09:49:52.428166+00:00", "market": "player_prop", "subject": "A. Brennan (JAZ)", "stat": "pra", "outcome": "Under", "line": 39.5, "book": "espnbet", "american": 130, "decimal": 2.3, "stake": 60.0, "stake_units": 0.6, "kelly_fraction": 0.006, "confidence": "A", "ev": 0.23661, "model_probability": 0.53766, "market_probability": 0.43478, "fair_probability": 0.56313, "sigma_logit": 0.31089, "books_priced": 8, "signals": [{"name": "prop_public_bias", "weight": 0.6, "adjustment": 0.0297, "rationale": "about 70% of tickets on pra take the over; the under is the unshaded side"}], "notes": ["the market's own 38.5 anchor implies a projection of 38.4 pra", "EV 23.66%, lower bound 11.63%", "8 books priced the anchor, median hold 6.7%", "Points + rebounds + assists: typical limit $1,000", "alternate 1 away from the anchor -- the fair price is extrapolated, so confidence and stake are reduced"]}], "opportunities": [{"kind": "middle", "event": "Lucia Ferraro @ Mateo Alcaraz", "market": "spread", "legs": [{"book": "caesars", "outcome": "Mateo Alcaraz", "american": -105, "line": 1.0}, {"book": "circa", "outcome": "Lucia Ferraro", "american": -100, "line": -0.0}], "profit_pct": 0.17116, "note": "1-point window, hits 18.0% of the time, costs 1.22% when it misses"}, {"kind": "middle", "event": "Lucia Ferraro @ Mateo Alcaraz", "market": "spread", "legs": [{"book": "caesars", "outcome": "Mateo Alcaraz", "american": -105, "line": 1.0}, {"book": "betfair", "outcome": "Lucia Ferraro", "american": -100, "line": -0.0}], "profit_pct": 0.17116, "note": "1-point window, hits 18.0% of the time, costs 1.22% when it misses"}, {"kind": "middle", "event": "Lucia Ferraro @ Mateo Alcaraz", "market": "spread", "legs": [{"book": "caesars", "outcome": "Mateo Alcaraz", "american": -105, "line": 1.0}, {"book": "bookmaker", "outcome": "Lucia Ferraro", "american": -105, "line": -0.0}], "profit_pct": 0.16187, "note": "1-point window, hits 18.0% of the time, costs 2.44% when it misses"}, {"kind": "middle", "event": "Philadelphia Eagles @ Houston Texans", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Houston Texans", "american": 105, "line": -1.0}, {"book": "bookmaker", "outcome": "Philadelphia Eagles", "american": -100, "line": 2.0}], "profit_pct": 0.10098, "note": "1-point window, hits 9.3% of the time, costs -1.22% when it misses"}, {"kind": "middle", "event": "Philadelphia Eagles @ Houston Texans", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Houston Texans", "american": 105, "line": -1.0}, {"book": "betfair", "outcome": "Philadelphia Eagles", "american": 100, "line": 2.0}], "profit_pct": 0.10098, "note": "1-point window, hits 9.3% of the time, costs -1.22% when it misses"}, {"kind": "middle", "event": "Houston Texans @ Cincinnati Bengals", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Cincinnati Bengals", "american": -105, "line": -2.5}, {"book": "betfair", "outcome": "Houston Texans", "american": -100, "line": 4.0}], "profit_pct": 0.09664, "note": "1.5-point window, hits 10.5% of the time, costs 1.22% when it misses"}, {"kind": "middle", "event": "Philadelphia Eagles @ Houston Texans", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Houston Texans", "american": 105, "line": -1.0}, {"book": "circa", "outcome": "Philadelphia Eagles", "american": -105, "line": 2.0}], "profit_pct": 0.09323, "note": "1-point window, hits 9.3% of the time, costs 0.00% when it misses"}, {"kind": "middle", "event": "Houston Texans @ Cincinnati Bengals", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Cincinnati Bengals", "american": -105, "line": -2.5}, {"book": "bookmaker", "outcome": "Houston Texans", "american": -105, "line": 4.0}], "profit_pct": 0.08869, "note": "1.5-point window, hits 10.5% of the time, costs 2.44% when it misses"}, {"kind": "middle", "event": "Houston Texans @ Cincinnati Bengals", "market": "spread", "legs": [{"book": "hardrock", "outcome": "Cincinnati Bengals", "american": -105, "line": -2.5}, {"book": "prophetx", "outcome": "Houston Texans", "american": -105, "line": 4.0}], "profit_pct": 0.08869, "note": "1.5-point window, hits 10.5% of the time, costs 2.44% when it misses"}, {"kind": "middle", "event": "Seattle Storm @ Los Angeles Sparks", "market": "spread", "legs": [{"book": "betrivers", "outcome": "Los Angeles Sparks", "american": 105, "line": -4.0}, {"book": "circa", "outcome": "Seattle Storm", "american": -100, "line": 5.0}], "profit_pct": 0.08055, "note": "1-point window, hits 7.3% of the time, costs -1.22% when it misses"}, {"kind": "middle", "event": "Seattle Storm @ Los Angeles Sparks", "market": "spread", "legs": [{"book": "betrivers", "outcome": "Los Angeles Sparks", "american": 105, "line": -4.0}, {"book": "betfair", "outcome": "Seattle Storm", "american": -100, "line": 5.0}], "profit_pct": 0.08055, "note": "1-point window, hits 7.3% of the time, costs -1.22% when it misses"}, {"kind": "middle", "event": "Seattle Storm @ Los Angeles Sparks", "market": "spread", "legs": [{"book": "betrivers", "outcome": "Los Angeles Sparks", "american": 105, "line": -4.0}, {"book": "prophetx", "outcome": "Seattle Storm", "american": 100, "line": 5.0}], "profit_pct": 0.08055, "note": "1-point window, hits 7.3% of the time, costs -1.22% when it misses"}, {"kind": "middle", "event": "Minnesota Timberwolves @ Utah Jazz", "market": "spread", "legs": [{"book": "bovada", "outcome": "Utah Jazz", "american": -105, "line": 10.5}, {"book": "circa", "outcome": "Minnesota Timberwolves", "american": -105, "line": -9.5}], "profit_pct": 0.05439, "note": "1-point window, hits 6.9% of the time, costs 2.44% when it misses"}, {"kind": "middle", "event": "Minnesota Timberwolves @ Utah Jazz", "market": "spread", "legs": [{"book": "bovada", "outcome": "Utah Jazz", "american": -105, "line": 10.5}, {"book": "bookmaker", "outcome": "Minnesota Timberwolves", "american": -105, "line": -9.5}], "profit_pct": 0.05439, "note": "1-point window, hits 6.9% of the time, costs 2.44% when it misses"}, {"kind": "middle", "event": "Minnesota Timberwolves @ Utah Jazz", "market": "spread", "legs": [{"book": "bovada", "outcome": "Utah Jazz", "american": -105, "line": 10.5}, {"book": "betfair", "outcome": "Minnesota Timberwolves", "american": -105, "line": -9.5}], "profit_pct": 0.05439, "note": "1-point window, hits 6.9% of the time, costs 2.44% when it misses"}, {"kind": "arbitrage", "event": "Miami Heat @ Utah Jazz", "market": "total", "legs": [{"book": "bookmaker", "outcome": "Over", "american": 100, "line": 227.5}, {"book": "bovada", "outcome": "Under", "american": 110, "line": 227.5}], "profit_pct": 0.02439, "note": "guaranteed 2.44% across 2 books; stake limited by the smallest book's limit"}, {"kind": "low_hold", "event": "Miami Heat @ Utah Jazz", "market": "total", "legs": [{"book": "bookmaker", "outcome": "Over", "american": 100, "line": 227.5}, {"book": "bovada", "outcome": "Under", "american": 110, "line": 227.5}], "profit_pct": 0.02439, "note": "combined hold of only -2.44% across books"}, {"kind": "arbitrage", "event": "Minnesota Timberwolves @ Utah Jazz", "market": "total", "legs": [{"book": "betfair", "outcome": "Over", "american": -100, "line": 227.0}, {"book": "fanatics", "outcome": "Under", "american": 110, "line": 227.0}], "profit_pct": 0.02439, "note": "guaranteed 2.44% across 2 books; stake limited by the smallest book's limit"}, {"kind": "low_hold", "event": "Minnesota Timberwolves @ Utah Jazz", "market": "total", "legs": [{"book": "betfair", "outcome": "Over", "american": -100, "line": 227.0}, {"book": "fanatics", "outcome": "Under", "american": 110, "line": 227.0}], "profit_pct": 0.02439, "note": "combined hold of only -2.44% across books"}, {"kind": "arbitrage", "event": "Lucia Ferraro @ Mateo Alcaraz", "market": "total", "legs": [{"book": "circa", "outcome": "Over", "american": -105, "line": 24.5}, {"book": "hardrock", "outcome": "Under", "american": 115, "line": 24.5}], "profit_pct": 0.02322, "note": "guaranteed 2.32% across 2 books; stake limited by the smallest book's limit"}, {"kind": "low_hold", "event": "Lucia Ferraro @ Mateo Alcaraz", "market": "total", "legs": [{"book": "circa", "outcome": "Over", "american": -105, "line": 24.5}, {"book": "hardrock", "outcome": "Under", "american": 115, "line": 24.5}], "profit_pct": 0.02322, "note": "combined hold of only -2.32% across books"}, {"kind": "arbitrage", "event": "Philadelphia Eagles @ Houston Texans", "market": "spread", "legs": [{"book": "betrivers", "outcome": "Houston Texans", "american": 105, "line": -1.5}, {"book": "bookmaker", "outcome": "Philadelphia Eagles", "american": -100, "line": 2.0}], "profit_pct": 0.01235, "note": "guaranteed 1.23% across 2 books; stake limited by the smallest book's limit"}, {"kind": "low_hold", "event": "Philadelphia Eagles @ Houston Texans", "market": "spread", "legs": [{"book": "betrivers", "outcome": "Houston Texans", "american": 105, "line": -1.5}, {"book": "bookmaker", "outcome": "Philadelphia Eagles", "american": -100, "line": 2.0}], "profit_pct": 0.01235, "note": "combined hold of only -1.23% across books"}, {"kind": "arbitrage", "event": "Philadelphia Eagles @ Houston Texans", "market": "total", "legs": [{"book": "betfair", "outcome": "Over", "american": -100, "line": 37.5}, {"book": "espnbet", "outcome": "Under", "american": 105, "line": 37.5}], "profit_pct": 0.01235, "note": "guaranteed 1.23% across 2 books; stake limited by the smallest book's limit"}, {"kind": "low_hold", "event": "Philadelphia Eagles @ Houston Texans", "market": "total", "legs": [{"book": "betfair", "outcome": "Over", "american": -100, "line": 37.5}, {"book": "espnbet", "outcome": "Under", "american": 105, "line": 37.5}], "profit_pct": 0.01235, "note": "combined hold of only -1.23% across books"}], "skipped": [{"what": "R. Delgado (EAG) passing_yards Over 254.5", "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 36.5", "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (JAZ) rebounds Under 2.5", "why": "EV of 56% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Under 17.5", "why": "EV of 63% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Under 16.5", "why": "EV of 75% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Under 18.5", "why": "EV of 52% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Under 19.5", "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Over 17.5", "why": "EV of 61% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) points Over 19.5", "why": "EV of 99% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) pra Over 32.5", "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) pra Over 31.5", "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) pra Under 32.5", "why": "EV of 37% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) pra Under 30.5", "why": "EV of 51% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (HEA) points Over 23.5", "why": "EV of 39% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (HEA) points Over 25.5", "why": "EV of 63% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) points Under 16.5", "why": "EV of 53% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) points Under 17.5", "why": "EV of 43% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) points Over 18.5", "why": "EV of 52% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) points Over 19.5", "why": "EV of 70% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) points Over 20.5", "why": "EV of 87% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) pra Under 25.5", "why": "EV of 48% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) pra Under 24.5", "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (HEA) pra Over 26.5", "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (HEA) pra Under 27.5", "why": "EV of 41% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (HEA) pra Under 25.5", "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Alvarado (SPA) pra Over 28.5", "why": "EV of 70% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Alvarado (SPA) pra Over 26.5", "why": "EV of 44% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Alvarado (SPA) pra Over 30.5", "why": "EV of 99% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Whitfeld (SPA) points Over 17.5", "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) points Over 16.5", "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) points Over 17.5", "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) pra Over 26.5", "why": "EV of 83% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) pra Over 25.5", "why": "EV of 68% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) pra Over 27.5", "why": "EV of 104% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (SPA) pra Over 28.5", "why": "EV of 126% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Alvarado (MER) pra Over 19.5", "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (MER) points Under 21.5", "why": "EV of 41% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (MER) points Under 19.5", "why": "EV of 60% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (MER) points Under 20.5", "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Whitfeld (MER) points Over 13.5", "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Novak (MER) points Over 16.5", "why": "EV of 46% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Novak (MER) points Under 15.5", "why": "EV of 62% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Novak (MER) points Under 14.5", "why": "EV of 76% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Novak (MER) points Under 17.5", "why": "EV of 35% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (MER) rebounds Over 10.5", "why": "EV of 39% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "Lucia Ferraro aces Under 9.5", "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Delgado (BEN) completions Over 24.5", "why": "EV of 40% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "R. Delgado (BEN) completions Under 20.5", "why": "EV of 50% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "P. Cavanaugh (BEN) anytime_td Over 1.5", "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 27.5", "why": "EV of 59% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 25.5", "why": "EV of 103% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 26.5", "why": "EV of 84% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 28.5", "why": "EV of 57% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (JAZ) pra Under 29.5", "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Kowalski (JAZ) pra Under 43.5", "why": "EV of 107% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Kowalski (JAZ) pra Under 42.5", "why": "EV of 122% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Kowalski (JAZ) pra Under 44.5", "why": "EV of 95% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "J. Ferreira (JAZ) pra Over 24.5", "why": "EV of 35% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (TIM) pra Over 39.5", "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (TIM) pra Over 40.5", "why": "EV of 66% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "A. Brennan (TIM) pra Over 41.5", "why": "EV of 76% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) points Over 25.5", "why": "EV of 42% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) points Over 24.5", "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) points Over 26.5", "why": "EV of 54% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) points Over 27.5", "why": "EV of 63% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) pra Over 25.5", "why": "EV of 44% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) pra Over 24.5", "why": "EV of 38% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Okafor (TIM) pra Over 27.5", "why": "EV of 81% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (TIM) pra Under 34.5", "why": "EV of 76% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (TIM) pra Under 36.5", "why": "EV of 61% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Vasquez (TIM) pra Over 35.5", "why": "EV of 47% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (STO) threes_made Under 0.5", "why": "EV of 55% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (STO) pra Under 33.5", "why": "EV of 83% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (STO) pra Under 31.5", "why": "EV of 136% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (STO) pra Under 32.5", "why": "EV of 115% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "K. Sunderland (STO) pra Under 34.5", "why": "EV of 81% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "T. Whitfeld (STO) points Under 5.5", "why": "EV of 37% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "M. Novak (STO) points Under 18.5", "why": "EV of 45% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (STO) points Over 11.5", "why": "EV of 49% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "D. Achebe (STO) points Over 12.5", "why": "EV of 68% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}, {"what": "Lucia Ferraro double_faults Over 7.5", "why": "EV of 36% is beyond the 35% sanity bound -- treating it as bad data, not an edge"}]};
 </script>
 <script>
 (function () {
@@ -2510,6 +1184,19 @@ const DEMO_CARD = {
     return (v * 100).toFixed(digits) + "%";
   };
   const fmtAmerican = function (a) { return (a > 0 ? "+" : "") + Math.round(a); };
+  const fmtDateTime = function (iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: "short", month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+      }).format(d);
+    } catch (e) {
+      return d.toUTCString();
+    }
+  };
   const escapeHtml = function (s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -2625,6 +1312,52 @@ const DEMO_CARD = {
     }
   }
 
+  function renderScorecard() {
+    const stats = state.data.card_stats || {};
+    const sc = stats.scorecard;
+    const goal = stats.goal;
+    const panel = $("scorecardPanel");
+
+    if (!sc && !goal) {
+      panel.style.display = "none";
+      return;
+    }
+    panel.style.display = "grid";
+
+    if (sc && sc.graded > 0) {
+      $("scRecord").textContent = sc.wins + "–" + sc.losses;
+      $("scWinRate").textContent = fmtPct(sc.win_rate, 1);
+      $("scGraded").textContent = String(sc.graded);
+    } else {
+      $("scRecord").textContent = "—";
+      $("scWinRate").textContent = "—";
+      $("scGraded").textContent = "0";
+    }
+
+    const goalBlock = panel.querySelector(".scorecard-block:last-child");
+    if (!goal) {
+      goalBlock.style.display = "none";
+      return;
+    }
+    goalBlock.style.display = "block";
+
+    const pct = goal.progress_fraction || 0;
+    const fill = $("goalProgressFill");
+    fill.style.width = fmtPct(Math.min(Math.max(pct, 0), 1), 0);
+    fill.classList.toggle("is-full", pct >= 0.999);
+
+    $("goalProgressPct").textContent = fmtPct(pct, 0);
+    $("goalBanked").textContent = goal.banked_surplus_units.toFixed(2) + "u";
+    $("goalRemaining").textContent = goal.effective_goal_units.toFixed(2) + "u / " + goal.daily_goal_units.toFixed(1) + "u";
+    $("goalRiskMult").textContent = fmtPct(goal.risk_multiplier, 0);
+
+    $("goalHint").textContent = pct >= 0.999
+      ? "Today's goal is fully banked from prior surplus — sizing is floored at " + fmtPct(goal.risk_multiplier, 0) + " of normal rather than stopping outright."
+      : pct > 0
+        ? "Prior surplus covers " + fmtPct(pct, 0) + " of today's goal, so sizing is scaled to " + fmtPct(goal.risk_multiplier, 0) + " of normal."
+        : "No banked surplus carrying into today — sizing at full normal.";
+  }
+
   function betCardHtml(f, index) {
     const b = f.bet;
     const tier = b.confidence;
@@ -2651,6 +1384,7 @@ const DEMO_CARD = {
 
     const evClass = f.ev >= 0 ? "good" : "bad";
     const constraintNote = f.constraint ? escapeHtml(f.constraint) : "";
+    const whenTxt = fmtDateTime(b.start_time);
 
     return (
       '<article class="bet-card" data-tier="' + escapeHtml(tier) + '" data-idx="' + index + '">' +
@@ -2660,6 +1394,7 @@ const DEMO_CARD = {
             '<span class="tier-badge">' + escapeHtml(tier) + "</span>" +
             "<span>" + escapeHtml(b.event) + "</span>" +
             "<span>&middot;</span><span>" + escapeHtml(b.league) + "</span>" +
+            (whenTxt ? '<span>&middot;</span><span class="bet-when" title="' + escapeHtml(b.start_time) + '">' + escapeHtml(whenTxt) + "</span>" : "") +
           "</div>" +
           '<div class="bet-desc">' + subjectTxt + statTxt + outcomeTxt +
             ' <span class="price">(' + fmtAmerican(b.american) + ')</span> ' +
@@ -2829,6 +1564,7 @@ const DEMO_CARD = {
     buildFilterChips();
     renderOpportunities();
     renderSkipped();
+    renderScorecard();
     render();
     setIoStatus(
       isDemo ? "Showing demo data (" + obj.bets.length + " bets)." : "Loaded " + obj.bets.length + " bets.",
