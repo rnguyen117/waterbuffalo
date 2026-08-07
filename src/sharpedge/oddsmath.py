@@ -316,6 +316,7 @@ SPORT_SIGMA: dict[str, float] = {
     "wnba": 10.8,
     "nhl": 1.9,  # goals; prefer the Skellam path for hockey
     "mlb": 3.1,  # runs; prefer the Skellam path for baseball
+    "npb": 2.9,  # runs; NPB's run environment sits a bit below MLB's, by analogy rather than a dedicated historical fit
     "soccer": 1.4,
     # Games margin, best-of-3 (the large majority of tour-level matches,
     # every WTA match, most ATP matches). Best-of-5 is wider --

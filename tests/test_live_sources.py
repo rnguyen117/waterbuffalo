@@ -32,7 +32,7 @@ from sharpedge.sources.live_weather import (
     _parse_wind_mph,
 )
 from sharpedge.sources.base import SourceError
-from sharpedge.sources.theoddsapi import PROP_MARKET_KEYS, TheOddsAPISource, _attach_prop_markets
+from sharpedge.sources.theoddsapi import PROP_MARKET_KEYS, SPORT_KEYS, TheOddsAPISource, _attach_prop_markets
 from sharpedge.models import Event
 
 
@@ -48,6 +48,16 @@ class TestPropMarketKeys:
                     f"{sport}/{market_key} maps to stat {stat!r}, which has "
                     "no PropProfile in market/taxonomy.py"
                 )
+
+    def test_npb_has_no_prop_markets(self):
+        # NPB is a real sport key (fetch_events works for it), but The Odds
+        # API does not list player-prop markets for baseball_npb -- only
+        # core h2h/spreads/totals. Deliberately no PROP_MARKET_KEYS entry,
+        # which fetch_props treats as "nothing to fetch" rather than an
+        # error. This locks that design decision in against someone later
+        # assuming every baseball sport has props like MLB does.
+        assert "npb" in SPORT_KEYS
+        assert "npb" not in PROP_MARKET_KEYS
 
 
 class TestAttachPropMarkets:

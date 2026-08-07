@@ -109,6 +109,31 @@ just structurally starved of a real feed. If you have or can get a paid
 public-betting data source, wiring it in is a matter of populating
 `Inputs.public` the same way the injuries/weather sources below do.
 
+**Sport coverage is whatever The Odds API lists, not whatever exists.**
+`sources.sports` defaults to `nfl, nba, wnba, mlb, npb, tennis`. NPB
+(Nippon Professional Baseball, Japan) is wired the same way MLB is, minus
+player props -- The Odds API only publishes h2h/spreads/totals for
+`baseball_npb`, no prop markets, so `PROP_MARKET_KEYS` deliberately has no
+`npb` entry and `fetch_props` treats that as "nothing to fetch," not an
+error. **KBO (Korean baseball) is not available from The Odds API at any
+plan tier** -- checked directly against their `/v4/sports` catalog (79
+sports, no KBO). Wiring it in would mean integrating a second data
+provider, not a config change, and no free/legitimate KBO odds source is
+known to exist.
+
+**Credits are the real constraint, and they burn far faster than "one
+request per pull."** The Odds API charges `regions x markets` per call,
+not one credit per call. With the default 3 regions (`us, us2, eu`) and
+player props priced per event (not bulk), a single `card` run against a
+full slate can cost **400-500+ credits** -- almost the entire 500/month
+free tier in one run, because props dominate the bill (bulk odds pulls are
+cheap; per-event prop chunks, multiplied by regions, are not). Practical
+levers, cheapest first: drop `regions` to `["us"]` (3x cheaper), lower
+`live_props_max_events`, or set `live_props = false` entirely. Paid tiers
+(checked live): 20K credits/mo for $30, 100K/mo for $59, 5M/mo for $119.
+At ~500 credits/run, 20K/mo supports roughly 40 runs a month before the
+props cap or region count need loosening further.
+
 ## Every market, not just sides
 
 Moneylines, spreads, and totals are the *hardest* markets to beat, because

@@ -292,6 +292,7 @@ class HomeFieldSignal:
         "ncaab": (2.5, 5.0),
         "nhl": (0.1, 0.35),
         "mlb": (0.1, 0.35),
+        "npb": (0.1, 0.35),
     }
 
     def evaluate(self, ctx: SignalContext) -> list[SignalContribution]:

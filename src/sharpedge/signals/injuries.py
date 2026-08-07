@@ -76,6 +76,14 @@ POSITION_VALUE: dict[str, dict[str, float]] = {
         "OF": 0.12,
         "DH": 0.1,
     },
+    "npb": {
+        "SP": 0.6,   # same roster shape as MLB; no NPB-specific injury feed exists to fit this against
+        "RP": 0.1,
+        "C": 0.15,
+        "IF": 0.12,
+        "OF": 0.12,
+        "DH": 0.1,
+    },
 }
 
 

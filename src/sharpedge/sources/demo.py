@@ -77,6 +77,13 @@ MLB_TEAMS = [
     "Seattle Mariners", "Toronto Blue Jays", "Chicago Cubs", "Boston Red Sox",
 ]
 
+NPB_TEAMS = [
+    "Yomiuri Giants", "Hanshin Tigers", "Yokohama DeNA BayStars", "Hiroshima Toyo Carp",
+    "Tokyo Yakult Swallows", "Chunichi Dragons", "Fukuoka SoftBank Hawks", "Orix Buffaloes",
+    "Chiba Lotte Marines", "Tohoku Rakuten Golden Eagles", "Saitama Seibu Lions",
+    "Hokkaido Nippon-Ham Fighters",
+]
+
 # Fictional tour players -- tennis has no "team," so home_team/away_team hold
 # a player name instead. Kept fictional for the same reason the injury/news
 # generator invents its own names rather than borrowing real athletes': this
@@ -99,35 +106,41 @@ SPORT_TEAMS: dict[str, list[str]] = {
     "nba": NBA_TEAMS,
     "wnba": WNBA_TEAMS,
     "mlb": MLB_TEAMS,
+    "npb": NPB_TEAMS,
 }
 
 # WNBA quarters run 10 minutes to the NBA's 12 and rosters carry fewer high-
 # usage scorers, so the combined final score sits well below the NBA's. MLB
 # is not "points" at all -- it's total runs, an order of magnitude smaller
 # than the others, which is exactly why it needs its own entry rather than
-# falling back to a football/basketball-scaled default.
+# falling back to a football/basketball-scaled default. NPB's run
+# environment sits a little below MLB's.
 SPORT_BASE_TOTAL: dict[str, float] = {
     "nfl": 44.5,
     "nba": 224.5,
     "wnba": 163.5,
     "mlb": 8.5,
+    "npb": 7.5,
 }
 
 # How far a generated "true spread" and total swing from their base, per
 # sport. Football/basketball spreads commonly run up to two possessions;
 # an MLB run line almost never leaves -1.5/+1.5/-2.5/+2.5, and a generic
 # +-10.5 range built for the other sports would generate absurd run lines.
+# NPB shares MLB's run-line shape.
 SPORT_SPREAD_RANGE: dict[str, float] = {
     "nfl": 10.5,
     "nba": 10.5,
     "wnba": 10.5,
     "mlb": 2.5,
+    "npb": 2.5,
 }
 SPORT_TOTAL_SWING: dict[str, float] = {
     "nfl": 8.0,
     "nba": 8.0,
     "wnba": 8.0,
     "mlb": 2.5,
+    "npb": 2.5,
 }
 
 # Teams the public bets regardless of price. Retail books shade their numbers

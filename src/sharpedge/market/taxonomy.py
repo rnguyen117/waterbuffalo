@@ -319,6 +319,11 @@ SPORT_MARKETS: dict[str, list[MarketType]] = {
         MarketType.MONEYLINE, MarketType.SPREAD, MarketType.TOTAL,
         MarketType.TEAM_TOTAL, MarketType.FIRST_FIVE, MarketType.PLAYER_PROP,
     ],
+    "npb": [
+        # No team total, first-five, or player props: The Odds API only
+        # lists core h2h/spreads/totals for baseball_npb.
+        MarketType.MONEYLINE, MarketType.SPREAD, MarketType.TOTAL,
+    ],
     "nhl": [
         MarketType.MONEYLINE, MarketType.SPREAD, MarketType.TOTAL,
         MarketType.TEAM_TOTAL, MarketType.FIRST_PERIOD, MarketType.PLAYER_PROP,

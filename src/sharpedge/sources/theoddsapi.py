@@ -38,6 +38,7 @@ SPORT_KEYS: dict[str, str] = {
     "ncaab": "basketball_ncaab",
     "wnba": "basketball_wnba",
     "mlb": "baseball_mlb",
+    "npb": "baseball_npb",
     "nhl": "icehockey_nhl",
     "soccer": "soccer_epl",
 }
@@ -57,6 +58,11 @@ MARKET_KEYS: dict[str, MarketType] = {
 # pricing, which is not worth the extra API call). Props are priced per
 # *event*, not bulk per sport the way fetch_events pulls core markets --
 # see fetch_props for why that changes how this gets called.
+#
+# NPB (baseball_npb) has no entry here on purpose: The Odds API does not
+# list player-prop markets for it, only h2h/spreads/totals. fetch_props
+# already treats a missing keymap as "nothing to fetch" and moves on, so
+# this is the correct way to represent "core markets only."
 PROP_MARKET_KEYS: dict[str, dict[str, str]] = {
     "nfl": {
         "player_pass_yds": "passing_yards",
