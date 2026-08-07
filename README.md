@@ -328,6 +328,34 @@ Python pipeline.
 over 540 bets, you finish profitable 64% of the time and see a 20% drawdown
 along the way 47% of the time. That is what a *winning* approach feels like.
 
+## Dashboard
+
+`web/dashboard.html` is a self-contained staking calculator and card
+explorer — open it directly in a browser, no server or build step. It ships
+with an embedded sample card so it works immediately, and it reads a real
+export from `sharp-edge card --json` if you paste or upload one.
+
+Every control on the left recomputes the card live, client-side:
+
+- **Bankroll, unit size, Kelly multiplier, exposure caps** — restaked
+  through the exact same uncertainty-shrunk fractional-Kelly formula as
+  `pricing/kelly.py`, cross-checked against the Python output to six decimal
+  places before anything shipped. A single pass of the same per-bet /
+  per-game / per-book / total-exposure caps from `pricing/portfolio.py`
+  follows — not the full correlation-aware optimizer (that still only runs
+  in the CLI), so treat these totals as a close approximation.
+- **Sort and filter** (rank mode, minimum win probability, sport, market
+  type) act on the bets already screened into the loaded card. They do not
+  re-run the EV screen — changing what qualifies for a card at all still
+  means adjusting `filters.*` and rerunning `sharp-edge card`.
+
+It is a staking calculator and card viewer, not a rebuild of the pipeline in
+JavaScript. That scope is deliberate: recomputing stakes from a screened
+card's own numbers is arithmetic a browser can do exactly; regenerating
+which bets qualify would mean re-implementing the signal engine, and a
+second implementation that quietly drifts from the Python one is worse than
+no second implementation.
+
 ## Layout
 
 ```
@@ -347,6 +375,8 @@ src/sharpedge/
   track/            ledger, closing line value, calibration
   backtest/         Monte Carlo simulation
   sources/          The Odds API, RSS news, demo generator
+web/
+  dashboard.html    self-contained staking calculator and card explorer
 ```
 
 `docs/METHODOLOGY.md` explains the reasoning behind the numbers — where the
