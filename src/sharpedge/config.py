@@ -104,6 +104,18 @@ class SourceConfig:
     markets: list[str] = field(default_factory=lambda: ["h2h", "spreads", "totals"])
     news_feeds: list[str] = field(default_factory=list)
     cache_ttl_seconds: int = 120
+    # Player props are priced per event by The Odds API, not bulk per sport
+    # -- one additional paid API call per game. live_props_max_events is a
+    # hard ceiling on how many of the near-term slate's events get a props
+    # call in a single run, independent of how many events happen to be in
+    # the window; raise it deliberately, not by accident.
+    live_props: bool = True
+    live_props_max_events: int = 20
+    # Free, no credit cost: ESPN's public site API (unofficial, unversioned
+    # -- see sources/live_injuries.py) and the National Weather Service
+    # (official, US-only, NFL games only).
+    live_injuries: bool = True
+    live_weather: bool = True
 
 
 @dataclass
@@ -244,6 +256,14 @@ provider = "demo"          # "demo" or "theoddsapi"
 sports = ["nfl", "nba", "wnba", "mlb", "tennis"]
 regions = ["us", "us2", "eu"]
 markets = ["h2h", "spreads", "totals"]
+# Player props cost one additional paid API call per event (The Odds API
+# prices them per game, not bulk). live_props_max_events caps that per run.
+live_props = true
+live_props_max_events = 20
+# Free: ESPN's public site API for injuries (unofficial, can change without
+# notice) and the National Weather Service for NFL game-day forecasts.
+live_injuries = true
+live_weather = true
 
 [goals]
 # Daily profit target in units. Once a day's profit clears this, the

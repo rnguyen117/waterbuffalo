@@ -50,6 +50,62 @@ MARKET_KEYS: dict[str, MarketType] = {
     "alternate_totals": MarketType.ALTERNATE_TOTAL,
 }
 
+# The Odds API's player-prop market keys, mapped onto this package's
+# internal stat names (market/taxonomy.py's PROP_PROFILES -- only stats
+# that already have a real profile there are listed; a market with no
+# profile would just fall back to "unprofiled, treated conservatively"
+# pricing, which is not worth the extra API call). Props are priced per
+# *event*, not bulk per sport the way fetch_events pulls core markets --
+# see fetch_props for why that changes how this gets called.
+PROP_MARKET_KEYS: dict[str, dict[str, str]] = {
+    "nfl": {
+        "player_pass_yds": "passing_yards",
+        "player_pass_tds": "passing_tds",
+        "player_pass_completions": "completions",
+        "player_rush_yds": "rushing_yards",
+        "player_receptions": "receptions",
+        "player_reception_yds": "receiving_yards",
+        "player_anytime_td": "anytime_td",
+    },
+    "nba": {
+        "player_points": "points",
+        "player_rebounds": "rebounds",
+        "player_assists": "assists",
+        "player_threes": "threes_made",
+        "player_steals": "steals",
+        "player_blocks": "blocks",
+        "player_points_rebounds_assists": "pra",
+    },
+    "wnba": {
+        "player_points": "points",
+        "player_rebounds": "rebounds",
+        "player_assists": "assists",
+        "player_threes": "threes_made",
+        "player_steals": "steals",
+        "player_blocks": "blocks",
+        "player_points_rebounds_assists": "pra",
+    },
+    "mlb": {
+        "pitcher_strikeouts": "strikeouts",
+        "pitcher_hits_allowed": "hits_allowed",
+        "pitcher_earned_runs": "earned_runs",
+        "batter_hits": "hits",
+        "batter_total_bases": "total_bases",
+        "batter_rbis": "rbis",
+        "batter_runs_scored": "runs_scored",
+        "batter_home_runs": "home_runs",
+    },
+    "nhl": {
+        "player_points": "player_points",
+        "player_shots_on_goal": "shots_on_goal",
+        "player_total_saves": "saves",
+    },
+}
+
+# The Odds API rejects a request for too many markets at once; chunk to
+# stay under that regardless of how many stats a sport's map above grows to.
+_PROPS_PER_REQUEST = 5
+
 # Their bookmaker keys mapped onto ours.
 BOOK_ALIASES: dict[str, str] = {
     "pinnacle": "pinnacle",
@@ -241,6 +297,43 @@ class TheOddsAPISource:
                 out.append(event)
         return out
 
+    def fetch_props(self, events: list[Event], max_events: int | None = None) -> None:
+        """Attach player-prop markets to each event, in place.
+
+        Unlike ``fetch_events``, which pulls a whole sport's core markets in
+        one call, props are priced per event -- there is no bulk endpoint.
+        That means one additional request per event per market chunk, which
+        is real credit cost, not a free extension of the odds pull. Callers
+        should pass an already-filtered near-term slate (a season's worth
+        of events each getting a props call would burn a quota in minutes),
+        and ``max_events`` is a second, explicit backstop on top of that.
+
+        A failure fetching one event's props (a market not offered, a rate
+        limit, whatever) is swallowed and moves on to the next event --
+        losing one game's props is not worth losing the whole card over.
+        """
+        targets = events[:max_events] if max_events is not None else events
+        for event in targets:
+            keymap = PROP_MARKET_KEYS.get(event.sport.lower())
+            sport_key = SPORT_KEYS.get(event.sport.lower())
+            if not keymap or sport_key is None:
+                continue
+            market_keys = list(keymap.keys())
+            for start in range(0, len(market_keys), _PROPS_PER_REQUEST):
+                chunk = market_keys[start : start + _PROPS_PER_REQUEST]
+                try:
+                    raw = self._get(
+                        f"/sports/{sport_key}/events/{event.event_id}/odds",
+                        {
+                            "regions": ",".join(self.regions),
+                            "markets": ",".join(chunk),
+                            "oddsFormat": "american",
+                        },
+                    )
+                except SourceError:
+                    continue
+                _attach_prop_markets(event, raw, keymap)
+
     def fetch_scores(self, sport: str, days_back: int = 2) -> list[dict]:
         """Final scores, for settling bets and grading the model."""
         key = SPORT_KEYS.get(sport.lower())
@@ -253,6 +346,51 @@ class TheOddsAPISource:
         if self.credits_remaining is None:
             return "quota unknown (no request made yet)"
         return f"{self.credits_remaining} credits remaining, {self.credits_used} used"
+
+
+def _attach_prop_markets(event: Event, raw: dict, keymap: dict[str, str]) -> None:
+    """Parse one event-odds response into PLAYER_PROP markets, one per (stat, player)."""
+    by_subject: dict[tuple[str, str], Market] = {}
+    for bookmaker in raw.get("bookmakers", []):
+        book_key = BOOK_ALIASES.get(bookmaker.get("key", ""), bookmaker.get("key", ""))
+        updated = (
+            _parse_iso(bookmaker["last_update"])
+            if bookmaker.get("last_update")
+            else datetime.now(timezone.utc)
+        )
+        for market in bookmaker.get("markets", []):
+            stat = keymap.get(market.get("key", ""))
+            if stat is None:
+                continue
+            for outcome in market.get("outcomes", []):
+                # Player props carry the subject in "description" rather
+                # than "name" -- "name" is Over/Under here, same as totals.
+                player = outcome.get("description")
+                price = outcome.get("price")
+                line = _line_of(outcome)
+                if not player or price is None or line is None:
+                    continue
+                key = (stat, player)
+                target = by_subject.get(key)
+                if target is None:
+                    target = Market(
+                        event_id=event.event_id,
+                        market_type=MarketType.PLAYER_PROP,
+                        outcomes=["Over", "Under"],
+                        subject=player,
+                        metadata={"stat": stat},
+                    )
+                    by_subject[key] = target
+                target.prices.append(
+                    Price(
+                        book=book_key,
+                        outcome=_outcome_name(outcome, event),
+                        american=float(price),
+                        line=line,
+                        timestamp=updated,
+                    )
+                )
+    event.markets.extend(by_subject.values())
 
 
 def _outcome_name(outcome: dict, event: Event) -> str:

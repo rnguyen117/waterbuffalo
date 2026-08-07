@@ -88,6 +88,27 @@ funded accounts with under `[accounts]`, and run `sharp-edge -c sharp-edge.toml 
 Recommending a price at a book you cannot bet is noise, so configure the
 account list before trusting a card.
 
+**What "live" actually covers, and what it does not.** Odds and lines are
+always real once a key is set. Everything else is assembled from whatever
+free source actually exists for it, and one input has none at all:
+
+| Input | Source | Notes |
+|---|---|---|
+| Odds / lines | The Odds API | Real, always, given a key |
+| Player props | The Odds API, per event | Priced per game, not bulk -- one extra paid API call per event. `sources.live_props_max_events` caps it. Off by setting `live_props = false` |
+| Injuries | ESPN's public site API | Free, keyless, but unofficial and unversioned -- it is what espn.com itself runs on, not a published product, and could change shape without notice |
+| Weather | National Weather Service | Free, official, US-only. Only wired for NFL -- the one sport here with outdoor venues where it matters |
+| News | RSS, if you configure `news_feeds` | Empty otherwise |
+| Player lineups | Inferred from news text | No structured feed exists; this only works at all when `news_feeds` is configured, and it's keyword matching ("will start," "scratched"), not a confirmed lineup |
+| Public betting (tickets/handle) | **None** | Real-time ticket/handle splits are a paid product (Action Network and similar). Left empty rather than built against an unofficial scrape of someone else's consensus page |
+
+That last row means the public-money signals (`HandleDivergenceSignal`,
+part of `ReverseLineMovementSignal`) never fire on a live card today --
+they are fully implemented and tested against the demo's simulated data,
+just structurally starved of a real feed. If you have or can get a paid
+public-betting data source, wiring it in is a matter of populating
+`Inputs.public` the same way the injuries/weather sources below do.
+
 ## Every market, not just sides
 
 Moneylines, spreads, and totals are the *hardest* markets to beat, because
@@ -491,7 +512,8 @@ src/sharpedge/
   risk/             bankroll management, correlation, goal-based sizing
   track/            ledger, closing line value, calibration
   backtest/         Monte Carlo simulation
-  sources/          The Odds API, RSS news, demo generator
+  sources/          The Odds API (odds, props), NWS (weather), ESPN
+                    (injuries), RSS news, demo generator
 web/
   dashboard.html    self-contained staking calculator and card explorer
 ```
@@ -506,7 +528,7 @@ that they are carried at near-zero weight.
 pip install pytest && pytest
 ```
 
-430 tests, no network required. They cover the math against known values
+459 tests, no network required. They cover the math against known values
 (-110 is 52.38%, three is the most common NFL margin, Kelly at p=0.6 and even
 money is 0.2), and the behaviors that matter: the screen must find the stale
 lines the demo generator plants, and it must never recommend both sides of a
@@ -521,8 +543,16 @@ must find **nothing**.
   against your own results.
 - **Winning accounts get limited.** Sustained success at retail books leads to
   stake limits or closure. This is a business reality the software cannot solve.
-- **Public ticket data is a weak sample.** It covers a small, unrepresentative
-  slice of the market, which is why signals derived from it are weighted low.
+- **Public ticket/handle data has no live source.** The signals that read it
+  are weighted low by design even where the data exists, because it covers a
+  small, unrepresentative slice of the market -- but as shipped, live mode
+  has no feed for it at all (see the table under "Going live"), so those
+  signals are inert on a live card, not just lightly weighted.
+- **The injury source is unofficial.** ESPN's site API is not a published,
+  versioned product; it is what espn.com itself happens to run on, and it
+  can change shape or disappear without notice. Treat a sudden empty
+  injuries list as "check whether ESPN changed something," not "no one is
+  hurt today."
 - **Correlations are structural, not estimated.** Estimating them from your own
   history needs more settled bets than anyone has.
 - **Prop distribution shapes are empirical priors, not fitted per player.** The

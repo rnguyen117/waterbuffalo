@@ -949,13 +949,41 @@ def fetch_inputs(config: Config) -> Inputs:
         )
         events = source.fetch_events(config.sources.sports)
 
+        # Props are priced per event, not bulk per sport -- fetch them only
+        # for the slate that will actually survive the near-term filter,
+        # never the whole season fetch_events returns. Same reasoning that
+        # already gates news/injuries: do not spend real cost (here, API
+        # credits) on games nobody is about to bet on.
+        if config.sources.live_props and config.filters.include_props:
+            now = utcnow()
+            near_term = [
+                e for e in events if e.hours_to_start(now) <= config.filters.max_hours_to_start
+            ]
+            source.fetch_props(near_term, max_events=config.sources.live_props_max_events)
+
         news: list[NewsItem] = []
         if config.sources.news_feeds:
             from .sources.news_feed import RSSNewsSource
 
             news = RSSNewsSource(config.sources.news_feeds).fetch_news()
 
-        return Inputs(events=events, news=news, injuries=[], weather={}, public=[])
+        injuries: list[InjuryReport] = []
+        if config.sources.live_injuries:
+            from .sources.live_injuries import ESPNInjurySource
+
+            injuries = ESPNInjurySource().fetch_injuries(config.sources.sports)
+
+        weather: dict[str, WeatherReport] = {}
+        if config.sources.live_weather:
+            from .sources.live_weather import NWSWeatherSource
+
+            weather = NWSWeatherSource().fetch_weather(events)
+
+        # No free, reliable, official source for real ticket%/handle% data
+        # exists -- real-time public-betting splits are a paid product
+        # (Action Network and similar). Left empty rather than built against
+        # an unofficial scrape of someone else's consensus page.
+        return Inputs(events=events, news=news, injuries=injuries, weather=weather, public=[])
 
     raise ValueError(
         f"unknown provider {config.sources.provider!r}; expected 'demo' or 'theoddsapi'"
