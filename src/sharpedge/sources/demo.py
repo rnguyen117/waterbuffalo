@@ -70,6 +70,12 @@ WNBA_TEAMS = [
     "Atlanta Dream", "Washington Mystics", "Dallas Wings", "Los Angeles Sparks",
 ]
 
+MLB_TEAMS = [
+    "New York Yankees", "Los Angeles Dodgers", "Houston Astros", "Atlanta Braves",
+    "Baltimore Orioles", "Texas Rangers", "Philadelphia Phillies", "San Diego Padres",
+    "Seattle Mariners", "Toronto Blue Jays", "Chicago Cubs", "Boston Red Sox",
+]
+
 # Fictional tour players -- tennis has no "team," so home_team/away_team hold
 # a player name instead. Kept fictional for the same reason the injury/news
 # generator invents its own names rather than borrowing real athletes': this
@@ -91,14 +97,36 @@ SPORT_TEAMS: dict[str, list[str]] = {
     "nfl": NFL_TEAMS,
     "nba": NBA_TEAMS,
     "wnba": WNBA_TEAMS,
+    "mlb": MLB_TEAMS,
 }
 
 # WNBA quarters run 10 minutes to the NBA's 12 and rosters carry fewer high-
-# usage scorers, so the combined final score sits well below the NBA's.
+# usage scorers, so the combined final score sits well below the NBA's. MLB
+# is not "points" at all -- it's total runs, an order of magnitude smaller
+# than the others, which is exactly why it needs its own entry rather than
+# falling back to a football/basketball-scaled default.
 SPORT_BASE_TOTAL: dict[str, float] = {
     "nfl": 44.5,
     "nba": 224.5,
     "wnba": 163.5,
+    "mlb": 8.5,
+}
+
+# How far a generated "true spread" and total swing from their base, per
+# sport. Football/basketball spreads commonly run up to two possessions;
+# an MLB run line almost never leaves -1.5/+1.5/-2.5/+2.5, and a generic
+# +-10.5 range built for the other sports would generate absurd run lines.
+SPORT_SPREAD_RANGE: dict[str, float] = {
+    "nfl": 10.5,
+    "nba": 10.5,
+    "wnba": 10.5,
+    "mlb": 2.5,
+}
+SPORT_TOTAL_SWING: dict[str, float] = {
+    "nfl": 8.0,
+    "nba": 8.0,
+    "wnba": 8.0,
+    "mlb": 2.5,
 }
 
 # Teams the public bets regardless of price. Retail books shade their numbers
@@ -107,6 +135,7 @@ PUBLIC_TEAMS = {
     "Kansas City Chiefs", "Dallas Cowboys", "Green Bay Packers", "Philadelphia Eagles",
     "Los Angeles Lakers", "Golden State Warriors", "Boston Celtics", "New York Knicks",
     "New York Liberty", "Las Vegas Aces", "Indiana Fever",
+    "New York Yankees", "Los Angeles Dodgers",
 }
 
 
@@ -143,9 +172,11 @@ class DemoSource:
         pool = self.rng.sample(teams, 2)
         home, away = pool[0], pool[1]
 
-        true_spread = round(self.rng.uniform(-10.5, 10.5) * 2) / 2  # home spread
+        spread_range = SPORT_SPREAD_RANGE.get(sport, 10.5)
+        true_spread = round(self.rng.uniform(-spread_range, spread_range) * 2) / 2  # home spread
         base_total = SPORT_BASE_TOTAL.get(sport, 224.5)
-        true_total = round((base_total + self.rng.uniform(-8, 8)) * 2) / 2
+        total_swing = SPORT_TOTAL_SWING.get(sport, 8.0)
+        true_total = round((base_total + self.rng.uniform(-total_swing, total_swing)) * 2) / 2
         hours_out = self.rng.uniform(2, 72)
 
         event = Event(

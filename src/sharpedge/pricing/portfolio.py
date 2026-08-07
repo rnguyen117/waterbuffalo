@@ -118,12 +118,18 @@ def optimize(
         binding = hit
 
     # Materialize stakes and drop anything that rounds away to nothing.
+    # Floored to the cent rather than rounded to nearest: the projection
+    # above guarantees sum(f) * bankroll clears every cap, but round-to-
+    # nearest can push individual stakes up by half a cent each, and
+    # summed across a full card that is enough to breach a cap the
+    # optimizer itself just satisfied. Flooring can only ever reduce the
+    # total, never re-cross a cap it was already under.
     chosen: list[BetCandidate] = []
     for candidate, fraction in zip(eligible, f):
         stake = fraction * bankroll
         if stake < constraints.min_stake:
             continue
-        candidate.stake = round(stake, 2)
+        candidate.stake = math.floor(stake * 100) / 100
         candidate.kelly_fraction = fraction
         chosen.append(candidate)
 
