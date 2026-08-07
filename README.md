@@ -285,6 +285,7 @@ explicitly:
 | Extrapolating into an unpriceable tail | Rungs implying under 3% are declined outright |
 | An "edge" that is really bad data | Anything above 35% EV is rejected as a stale quote or parse error |
 | A card of ten props sharing one modeling assumption | Per-market-type caps, flagged when relaxed to fill the card |
+| Books split on which side of a near-even line is "favorite" | Every book's quote translated onto a common reference line before averaging |
 
 The system is built to say "no bets today" and does so often. That is the
 product working. A screen that finds fifteen edges every day has found zero.

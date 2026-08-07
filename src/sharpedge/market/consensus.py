@@ -76,6 +76,19 @@ def devigged_book_probs(
     return dict(zip(market.outcomes, fair))
 
 
+def _book_line(market: Market, book: str, outcome: str) -> float | None:
+    """The line a book most recently posted for one outcome.
+
+    Mirrors the price selection in :func:`devigged_book_probs` (latest by
+    timestamp) so the line and the probability always describe the same
+    quote.
+    """
+    matching = [p for p in market.by_book(book) if p.outcome == outcome]
+    if not matching:
+        return None
+    return max(matching, key=lambda p: p.timestamp).line
+
+
 def book_hold(market: Market, book: str) -> float | None:
     """Theoretical hold on one book's version of a market."""
     if not market.complete_at(book):
@@ -135,6 +148,7 @@ def fair_prices(
     hours_to_start: float = 24.0,
     half_life_min: float = 45.0,
     min_books: int = 2,
+    sport: str = "nfl",
 ) -> dict[str, FairPrice]:
     """Estimate the true probability of every outcome in a market.
 
@@ -143,6 +157,20 @@ def fair_prices(
     than raw probabilities because averaging probabilities directly biases
     the result toward 50% and compresses exactly the longshot region where
     the disagreements matter.
+
+    For markets with a line, every book's cover probability is first
+    translated onto a common reference line before it is averaged. This
+    matters more than it looks. On a near-even game, different books can
+    disagree about which side is the technical favorite -- one book has the
+    home team -1.5, another has it +1.5 -- purely because their internal
+    models sit on opposite sides of a coin flip. Averaging "P(cover -1.5)"
+    directly against "P(cover +1.5)" treats those as samples of the same
+    claim, which they are not, and the blended result is close to a
+    meaningless 50% no matter what either book actually believes. Once both
+    are converted to what they imply about a shared reference number, the
+    real (and usually much smaller) disagreement is what gets averaged.
+    Skipping this step is how a genuinely small 5-point difference of opinion
+    on a near-pick'em game turns into a fabricated 50%-EV bet.
     """
     now = now or utcnow()
     per_book: dict[str, dict[str, float]] = {}
@@ -186,18 +214,46 @@ def fair_prices(
 
     maturity = market_maturity(hours_to_start)
     results: dict[str, FairPrice] = {}
+    normalize_lines = market.market_type.is_spread_like or market.market_type.is_total_like
+    is_total = market.market_type.is_total_like
 
     for outcome in market.outcomes:
-        logits: list[float] = []
-        wts: list[float] = []
+        # Pick the reference line first, before translating anyone onto it.
+        # A weighted average of the raw posted lines is a fine target -- it
+        # does not need to be a real market number, only a fixed point every
+        # book's quote gets converted onto so the averaging step is comparing
+        # like with like.
+        reference_line = consensus_line(market, outcome, weights) if normalize_lines else None
+        is_over = outcome.lower().startswith("over")
+
+        # Translate every book onto the reference line once, then reuse the
+        # result both for the overall average and for the sharp/retail split
+        # below. Computing this twice with two different code paths is how a
+        # fix like this quietly stays half-applied.
+        translated: dict[str, float] = {}
         for book_key, probs in per_book.items():
             p = probs.get(outcome)
             if p is None or not 0.0 < p < 1.0:
                 continue
-            logits.append(logit(p))
-            wts.append(weights[book_key])
-        if not logits:
+            if reference_line is not None:
+                book_line = _book_line(market, book_key, outcome)
+                if book_line is not None and abs(book_line - reference_line) > 1e-9:
+                    p = probability_at_line(
+                        consensus_probability=p,
+                        consensus_line=book_line,
+                        target_line=reference_line,
+                        sport=sport,
+                        is_total=is_total,
+                        is_over=is_over,
+                    )
+                    p = min(max(p, 1e-6), 1.0 - 1e-6)
+            translated[book_key] = p
+
+        if not translated:
             continue
+
+        logits = [logit(p) for p in translated.values()]
+        wts = [weights[k] for k in translated]
 
         total_w = sum(wts)
         mean_logit = sum(l * w for l, w in zip(logits, wts)) / total_w
@@ -214,8 +270,8 @@ def fair_prices(
         sigma = dispersion / max(maturity, 0.25) ** 0.5
         sigma = max(sigma, 0.02)
 
-        sharp_p = _weighted_prob(per_book, weights, sharp_keys, outcome)
-        retail_p = _weighted_prob(per_book, weights, retail_keys, outcome)
+        sharp_p = _weighted_prob(translated, weights, sharp_keys)
+        retail_p = _weighted_prob(translated, weights, retail_keys)
         bias = 0.0
         if sharp_p is not None and retail_p is not None:
             bias = logit(retail_p) - logit(sharp_p)
@@ -228,7 +284,7 @@ def fair_prices(
             n_sharp_books=len(sharp_keys),
             sharp_probability=sharp_p,
             retail_probability=retail_p,
-            consensus_line=consensus_line(market, outcome, weights),
+            consensus_line=reference_line if normalize_lines else consensus_line(market, outcome, weights),
             market_hold=statistics.median(holds) if holds else None,
             retail_bias=bias,
         )
@@ -237,14 +293,14 @@ def fair_prices(
 
 
 def _weighted_prob(
-    per_book: dict[str, dict[str, float]],
+    probs: dict[str, float],
     weights: dict[str, float],
     keys: list[str],
-    outcome: str,
 ) -> float | None:
+    """Weighted log-odds average of a (book -> probability) map, restricted to keys."""
     logits, wts = [], []
     for k in keys:
-        p = per_book.get(k, {}).get(outcome)
+        p = probs.get(k)
         if p is None or not 0.0 < p < 1.0:
             continue
         logits.append(logit(p))

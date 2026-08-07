@@ -210,6 +210,7 @@ def run(
                 hours_to_start=hours,
                 half_life_min=config.model.consensus_half_life_min,
                 min_books=config.model.min_books_for_consensus,
+                sport=event.sport,
             )
             if not fair:
                 skipped.append(
@@ -751,17 +752,13 @@ def _line_adjusted_probability(
     fair, market: Market, event: Event, outcome: str, line: float | None
 ) -> float:
     """Fair probability of an outcome at a specific book's number."""
+    is_spread = market.market_type.is_spread_like
+    is_total = market.market_type.is_total_like
     if (
         line is None
         or fair.consensus_line is None
         or abs(line - fair.consensus_line) < 1e-9
-        or market.market_type
-        not in (
-            MarketType.SPREAD,
-            MarketType.TOTAL,
-            MarketType.ALTERNATE_SPREAD,
-            MarketType.ALTERNATE_TOTAL,
-        )
+        or not (is_spread or is_total)
     ):
         return fair.probability
 
@@ -770,8 +767,7 @@ def _line_adjusted_probability(
         consensus_line=fair.consensus_line,
         target_line=line,
         sport=event.sport,
-        is_total=market.market_type
-        in (MarketType.TOTAL, MarketType.ALTERNATE_TOTAL),
+        is_total=is_total,
         is_over=outcome.lower().startswith("over"),
     )
 

@@ -19,6 +19,7 @@ from sharpedge.market.consensus import (
     sharp_line,
 )
 from sharpedge.models import Market, MarketType, Price
+from sharpedge.oddsmath import american_to_decimal
 
 NOW = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
 
@@ -227,6 +228,150 @@ class TestLineReprice:
         nfl = probability_at_line(0.5, 3.0, 4.0, "nfl") - 0.5
         nba = probability_at_line(0.5, 3.0, 4.0, "nba") - 0.5
         assert nba > nfl
+
+
+class TestLineNormalization:
+    """Books that disagree about which side of a near-even line is which.
+
+    Discovered against live MLB data: on a near-coin-flip game, different
+    books can put the *same* team on opposite sides of the run line -- one
+    book has the home team -1.5, another has it +1.5 -- purely because their
+    internal models sit on slightly opposite sides of a 50/50 game. That is
+    a small, ordinary disagreement (here, roughly a 54%-vs-45% split on who
+    is actually favored).
+
+    Averaging "P(cover -1.5)" directly against "P(cover +1.5)" without first
+    translating them onto a common line treats those as samples of the same
+    claim. They are not, and the blended result collapses toward a
+    meaningless ~50% "cover probability at nothing in particular" -- which
+    then manufactures a huge phantom edge against any of the real quoted
+    prices. This is the regression test for that failure mode.
+    """
+
+    # Mirrors a real game: moneyline is a near coin flip everywhere, but the
+    # run line assignment flips between book groups.
+    GROUP_A = [  # Astros -1.5 (favorite convention)
+        ("bookA1", 168, -205),
+        ("bookA2", 170, -200),
+        ("bookA3", 160, -210),
+    ]
+    GROUP_B = [  # Astros +1.5 (underdog convention)
+        ("bookB1", -200, 165),
+        ("bookB2", -192, 168),
+        ("bookB3", -204, 167),
+        ("bookB4", -193, 162),
+    ]
+
+    def _split_line_market(self):
+        prices = []
+        for book, home_american, away_american in self.GROUP_A:
+            prices.append(price(book, "Home", home_american, line=-1.5))
+            prices.append(price(book, "Away", away_american, line=1.5))
+        for book, home_american, away_american in self.GROUP_B:
+            prices.append(price(book, "Home", home_american, line=1.5))
+            prices.append(price(book, "Away", away_american, line=-1.5))
+        return market(prices, market_type=MarketType.SPREAD)
+
+    def test_consensus_line_is_a_genuine_blend(self):
+        m = self._split_line_market()
+        fair = fair_prices(m, now=NOW, sport="mlb")
+        # Not equal to either side's raw line -- a real weighted average.
+        assert -1.5 < fair["Home"].consensus_line < 1.5
+        assert fair["Home"].consensus_line == pytest.approx(
+            -fair["Away"].consensus_line
+        )
+
+    def _ev_at_own_line(self, fair, outcome: str, own_line: float, american: float) -> float:
+        p = probability_at_line(
+            consensus_probability=fair[outcome].probability,
+            consensus_line=fair[outcome].consensus_line,
+            target_line=own_line,
+            sport="mlb",
+        )
+        return p * (american_to_decimal(american) - 1.0) - (1.0 - p)
+
+    def test_the_bug_signature_is_a_sign_flip_not_just_a_magnitude(self):
+        # The fixture deliberately encodes a real ~8.5-point moneyline
+        # disagreement between a 3-book minority (Group A, implying Houston
+        # ~54%) and a 4-book majority (Group B, implying ~45.5%). Once pooled
+        # honestly, Group A's own -1.5 price is priced for a world where
+        # Houston is a good bit more likely to win than the majority of the
+        # market believes, and at a demanding number (-1.5, "must win by 2"
+        # in a low-scoring sport) that belief gap is genuinely a below-fair
+        # price -- not a screaming buy.
+        #
+        # Before the fix, mixing "P(cover -1.5)" and "P(cover +1.5)" directly
+        # in one logit average collapsed the whole market to a meaningless
+        # ~50% cover probability, and Group A's generous-looking price came
+        # out at roughly +53% EV. The defect was never really about the
+        # *size* of the number -- it was the *sign*: a price that honest
+        # math says loses money looked like the best bet on the board.
+        m = self._split_line_market()
+        fair = fair_prices(m, now=NOW, sport="mlb")
+
+        for book, home_american, away_american in self.GROUP_A:
+            ev = self._ev_at_own_line(fair, "Home", -1.5, home_american)
+            assert ev < 0.0, f"{book}: Group A's own price should not look profitable ({ev:+.2%})"
+            assert ev > -0.35, f"{book}: EV is implausibly large in magnitude ({ev:+.2%})"
+
+        for book, home_american, away_american in self.GROUP_B:
+            ev = self._ev_at_own_line(fair, "Home", 1.5, home_american)
+            # The majority's own price should look roughly fair -- a small,
+            # plausible edge either way, not an extreme reading.
+            assert -0.15 < ev < 0.15, f"{book}: unexpectedly large EV {ev:+.2%}"
+
+    def test_translated_win_probability_lands_between_the_two_groups(self):
+        # Group A's own numbers imply Home ~54% to win straight up; group B's
+        # imply ~45.5%. The true consensus must land inside that range, not
+        # collapse to an unrelated ~50% cover probability at no real line.
+        m = self._split_line_market()
+        fair = fair_prices(m, now=NOW, sport="mlb")
+        implied_moneyline = probability_at_line(
+            consensus_probability=fair["Home"].probability,
+            consensus_line=fair["Home"].consensus_line,
+            target_line=0.0,
+            sport="mlb",
+        )
+        assert 0.44 < implied_moneyline < 0.56
+
+    def test_same_line_everywhere_is_unaffected_by_normalization(self):
+        # The ordinary case -- every book posts the same number -- must give
+        # the same answer as a plain vig-free average, since there is nothing
+        # to translate.
+        m = market(
+            [
+                price("draftkings", "Home", -110, line=-3.0),
+                price("draftkings", "Away", -110, line=3.0),
+                price("fanduel", "Home", -108, line=-3.0),
+                price("fanduel", "Away", -112, line=3.0),
+                price("betmgm", "Home", -112, line=-3.0),
+                price("betmgm", "Away", -108, line=3.0),
+            ],
+            market_type=MarketType.SPREAD,
+        )
+        fair = fair_prices(m, now=NOW, sport="nfl")
+        assert fair["Home"].consensus_line == pytest.approx(-3.0)
+        assert fair["Home"].probability == pytest.approx(0.5, abs=0.02)
+
+    def test_sharp_retail_split_still_works_after_the_refactor(self):
+        # _weighted_prob now consumes a pre-translated per-outcome map rather
+        # than the raw per-book dict; this guards against that refactor
+        # silently breaking the sharp/retail bias calculation.
+        m = market(
+            [
+                price("pinnacle", "Home", -110, line=-3.0),
+                price("pinnacle", "Away", -110, line=3.0),
+                price("draftkings", "Home", -140, line=-3.0),
+                price("draftkings", "Away", 120, line=3.0),
+                price("espnbet", "Home", -145, line=-3.0),
+                price("espnbet", "Away", 125, line=3.0),
+            ],
+            market_type=MarketType.SPREAD,
+        )
+        fair = fair_prices(m, now=NOW, sport="nfl")
+        assert fair["Home"].sharp_probability is not None
+        assert fair["Home"].retail_probability is not None
+        assert fair["Home"].retail_bias > 0  # retail shades toward the favorite
 
 
 class TestConservative:

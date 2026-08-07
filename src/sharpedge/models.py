@@ -98,6 +98,25 @@ class MarketType(str, Enum):
             MarketType.FIRST_SCORE,
         )
 
+    @property
+    def is_spread_like(self) -> bool:
+        """Whether the line is a margin (positive means getting points)."""
+        return self in (
+            MarketType.SPREAD,
+            MarketType.ALTERNATE_SPREAD,
+            MarketType.FIRST_HALF_SPREAD,
+        )
+
+    @property
+    def is_total_like(self) -> bool:
+        """Whether the line is a scoring threshold with Over/Under outcomes."""
+        return self in (
+            MarketType.TOTAL,
+            MarketType.ALTERNATE_TOTAL,
+            MarketType.TEAM_TOTAL,
+            MarketType.FIRST_HALF_TOTAL,
+        )
+
 
 class BookTier(str, Enum):
     """How much a book's price tells you about the true probability.

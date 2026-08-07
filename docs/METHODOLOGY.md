@@ -101,6 +101,60 @@ about a different information set. It gets decayed out of the consensus (45
 minute half-life) — while the stale price *itself* becomes an opportunity
 elsewhere in the pipeline.
 
+### Books can disagree about which side of the line is which
+
+Found against live MLB data, not the demo generator: on a near-coin-flip
+game, different books can put the *same* team on opposite sides of the run
+line. One book has the home team -1.5 (must win by two), another has it +1.5
+(can lose by one) — not because they disagree much about who wins, but
+because their internal models sit on slightly opposite sides of a genuine 50/50
+game, and the run-line "favorite" designation flips with it.
+
+```
+Houston Astros @ San Diego Padres, moneyline everywhere: +101 to +109
+  fanduel, bovada, betrivers    Astros -1.5   (favorite convention)
+  betmgm, bookmaker, draftkings Astros +1.5   (underdog convention)
+```
+
+Averaging "P(cover -1.5)" directly against "P(cover +1.5)" in log-odds space
+-- which is what a plain per-book consensus does -- treats those as samples
+of the same claim. They are not. The blend collapses toward a meaningless
+~50% cover probability at no real number, and that fake 50% then gets priced
+against an actual book's actual number, manufacturing an edge that isn't
+there:
+
+```
+Before the fix: Astros -1.5 @ +170 (bovada)   ->  point EV +53%, lower bound +18%
+```
+
+The lower confidence bound did not catch this. Shrinking toward the market
+only pulls a wrong center partway back toward another number; it does not
+detect that the center is wrong in the first place. Only the separate
+`max_ev` sanity cap happened to reject this specific case, and a smaller
+version of the same defect -- say a fabricated 25% edge -- would have sailed
+through everything.
+
+The fix translates every book's quote onto one common reference line
+*before* averaging, using the same margin-recovery math that already existed
+for re-pricing a single candidate at its own line
+(`market.consensus.probability_at_line`). Each book's cover probability
+implies an expected margin; that margin is what's real and comparable across
+books, regardless of which side of zero their particular line happened to
+land on. Averaged the right way, the same game recovers a small, honest
+disagreement:
+
+```
+After the fix: implied win probability lands at ~49%, consistent with the moneyline.
+                Group A's own price (built assuming Astros ~54%) prices at -18% EV
+                against the correctly pooled consensus -- a real, bounded
+                disagreement, not a phantom 50-point edge.
+```
+
+The regression test (`TestLineNormalization` in `tests/test_consensus.py`)
+keeps the diagnosis explicit: the defect was never really about the *size*
+of the number, it was the *sign* -- a price that honest math says loses money
+looked like the best bet on the board.
+
 ---
 
 ## 4. Converting points to probability
