@@ -660,12 +660,24 @@
   .figure .v.good { color: var(--good); }
   .figure .v.bad { color: var(--bad); }
   .disclosure {
-    color: var(--ink-faint);
-    font-size: 0.8rem;
-    transition: transform 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     align-self: center;
+    padding: 4px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    transition: border-color 0.12s ease, color 0.12s ease;
   }
-  .bet-card.is-open .disclosure { transform: rotate(90deg); }
+  .bet-top:hover .disclosure { border-color: var(--accent-dim); color: var(--ink); }
+  .disclosure .arrow { font-size: 0.7rem; transition: transform 0.15s ease; }
+  .bet-card.is-open .disclosure { border-color: var(--accent-dim); color: var(--ink); }
+  .bet-card.is-open .disclosure .arrow { transform: rotate(90deg); }
 
   .bet-detail {
     display: none;
@@ -676,6 +688,28 @@
     color: var(--ink-dim);
   }
   .bet-card.is-open .bet-detail { display: block; }
+  .bet-rationale {
+    background: var(--bg-inset);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 10px 13px;
+    margin-bottom: 12px;
+  }
+  .bet-rationale .label {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+  .bet-rationale p {
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .bet-rationale p + p { margin-top: 8px; }
   .bet-detail .prob-compare {
     display: flex;
     gap: 22px;
@@ -1381,6 +1415,54 @@ const LIVE_CARD = {"generated_at": "2026-08-07T13:55:51.104484+00:00", "bankroll
         : "No banked surplus carrying into today — sizing at full normal.";
   }
 
+  function buildRationale(f) {
+    const b = f.bet;
+    const gap = (b.model_probability || 0) - (b.market_probability || 0);
+    const gapDir = gap >= 0 ? "higher" : "lower";
+    const sentences = [];
+
+    sentences.push(
+      "The model prices this outcome at " + fmtPct(b.model_probability, 1) +
+      ", " + fmtPct(Math.abs(gap), 1) + " " + gapDir + " than the market-implied " +
+      fmtPct(b.market_probability, 1) + " at " + fmtAmerican(b.american) + " on " +
+      escapeHtml(b.book) + " — a " + (f.ev >= 0 ? "+" : "") + fmtPct(f.ev, 2) + " EV edge."
+    );
+
+    const rankedSignals = (b.signals || [])
+      .filter(function (s) { return Math.abs(s.weight * s.adjustment) > 1e-4; })
+      .slice()
+      .sort(function (a, c) { return Math.abs(c.weight * c.adjustment) - Math.abs(a.weight * a.adjustment); })
+      .slice(0, 3);
+    if (rankedSignals.length) {
+      const joined = rankedSignals
+        .map(function (s) { return escapeHtml(s.rationale).replace(/\.\s*$/, ""); })
+        .join("; ");
+      sentences.push("That edge is driven mainly by " + joined + ".");
+    } else {
+      sentences.push(
+        "No single signal dominates here — the edge rests on the sharp consensus line diverging from " +
+        escapeHtml(b.book) + "'s price rather than any one factor."
+      );
+    }
+
+    sentences.push(
+      "Across " + b.books_priced + " book" + (b.books_priced === 1 ? "" : "s") +
+      " priced, consensus fair probability comes out to " + fmtPct(b.fair_probability, 1) +
+      " — the bet is only worth taking at " + escapeHtml(b.book) +
+      " because that book's number still clears fair value."
+    );
+
+    const sizingTxt = f.constraint
+      ? "sizing is capped by " + escapeHtml(f.constraint).toLowerCase()
+      : "sizing follows uncertainty-adjusted Kelly with no binding cap";
+    sentences.push(
+      "This is a tier " + escapeHtml(b.confidence) + " confidence pick, and " + sizingTxt +
+      ", landing on a " + f.units.toFixed(2) + "u stake (" + fmtUSD(f.stake) + ")."
+    );
+
+    return sentences.map(function (s) { return "<p>" + s + "</p>"; }).join("");
+  }
+
   function betCardHtml(f, index) {
     const b = f.bet;
     const tier = b.confidence;
@@ -1408,6 +1490,7 @@ const LIVE_CARD = {"generated_at": "2026-08-07T13:55:51.104484+00:00", "bankroll
     const evClass = f.ev >= 0 ? "good" : "bad";
     const constraintNote = f.constraint ? escapeHtml(f.constraint) : "";
     const whenTxt = fmtDateTime(b.start_time);
+    const rationaleHtml = buildRationale(f);
 
     return (
       '<article class="bet-card" data-tier="' + escapeHtml(tier) + '" data-idx="' + index + '">' +
@@ -1428,10 +1511,11 @@ const LIVE_CARD = {"generated_at": "2026-08-07T13:55:51.104484+00:00", "bankroll
           '<div class="figure"><div class="k">Stake</div><div class="v">' + fmtUSD(f.stake) + "</div></div>" +
           '<div class="figure"><div class="k">Units</div><div class="v">' + f.units.toFixed(2) + "u</div></div>" +
           '<div class="figure"><div class="k">EV</div><div class="v ' + evClass + '">' + (f.ev >= 0 ? "+" : "") + fmtPct(f.ev, 2) + "</div></div>" +
-          '<div class="disclosure">&#9656;</div>' +
+          '<div class="disclosure"><span>Why this bet?</span><span class="arrow">&#9656;</span></div>' +
         "</div>" +
       "</div>" +
       '<div class="bet-detail">' +
+        '<div class="bet-rationale"><div class="label">Why this bet</div>' + rationaleHtml + "</div>" +
         '<div class="prob-compare">' +
           '<div class="figure"><div class="k">Model</div><div class="v">' + fmtPct(b.model_probability, 1) + "</div></div>" +
           '<div class="figure"><div class="k">Market</div><div class="v">' + fmtPct(b.market_probability, 1) + "</div></div>" +
