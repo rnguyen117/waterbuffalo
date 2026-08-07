@@ -99,6 +99,8 @@ BASE_PROJECTION: dict[str, tuple[float, float]] = {
     "anytime_td": (0.55, 0.18),
     "shots_on_goal": (2.6, 0.8),
     "saves": (26.0, 5.0),
+    "aces": (8.0, 4.0),
+    "double_faults": (3.2, 1.6),
 }
 
 # Which positions plausibly carry which stat.
@@ -140,6 +142,10 @@ class DemoPropSource:
     # -- depth chart -------------------------------------------------------
 
     def _attach_depth_chart(self, event: Event) -> None:
+        if event.sport == "tennis":
+            # No roster to attach: each side in event.home_team/away_team
+            # already *is* the one player who can carry a prop.
+            return
         roster = ROSTERS.get(event.sport, ROSTERS["nba"])
         depth: dict[str, dict] = {}
         for team in (event.home_team, event.away_team):
@@ -166,6 +172,10 @@ class DemoPropSource:
 
     def _derivatives(self, event: Event, now: datetime) -> list[Market]:
         """First-half and first-quarter markets, priced off the full game."""
+        if event.sport == "tennis":
+            # No halves, quarters, or team totals in an individual match --
+            # games-handicap and total-games are already the full menu.
+            return []
         spread_market = event.market(MarketType.SPREAD)
         total_market = event.market(MarketType.TOTAL)
         if spread_market is None or total_market is None:
@@ -232,6 +242,9 @@ class DemoPropSource:
         if not profiles:
             return []
 
+        if event.sport == "tennis":
+            return self._tennis_props(event, profiles, now)
+
         roster = ROSTERS.get(event.sport, [])
         out: list[Market] = []
 
@@ -248,6 +261,23 @@ class DemoPropSource:
                     market = self._prop_market(event, player, profile.stat, now)
                     if market is not None:
                         out.append(market)
+        return out
+
+    def _tennis_props(self, event: Event, profiles: list, now: datetime) -> list[Market]:
+        """Aces/double-faults for the two players directly -- no roster.
+
+        Unlike a team sport, both sides of a tennis match are themselves the
+        prop subject, so this skips the roster/position filtering entirely
+        rather than reusing the team-sport loop with a one-player roster.
+        """
+        out: list[Market] = []
+        for player in (event.home_team, event.away_team):
+            for profile in profiles:
+                if self.rng.random() > 0.7:
+                    continue
+                market = self._prop_market(event, player, profile.stat, now)
+                if market is not None:
+                    out.append(market)
         return out
 
     def _prop_market(

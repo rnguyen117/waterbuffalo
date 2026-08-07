@@ -317,6 +317,12 @@ SPORT_SIGMA: dict[str, float] = {
     "nhl": 1.9,  # goals; prefer the Skellam path for hockey
     "mlb": 3.1,  # runs; prefer the Skellam path for baseball
     "soccer": 1.4,
+    # Games margin, best-of-3 (the large majority of tour-level matches,
+    # every WTA match, most ATP matches). Best-of-5 is wider --
+    # pricing.tennis.games_margin_sigma() gives the format-aware version;
+    # this generic entry is the fallback for callers that only know the
+    # sport, not the match format.
+    "tennis": 4.1,
 }
 
 # Approximate NFL frequency of each absolute final margin. Football margins

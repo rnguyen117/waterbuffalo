@@ -255,6 +255,15 @@ PROP_PROFILES: list[PropProfile] = [
     PropProfile("wnba_steals", "Steals", "steals", "wnba", 0.34, 0.130, 200, 3,
                 "barely covered; real edges, tiny stakes"),
     PropProfile("wnba_blocks", "Blocks", "blocks", "wnba", 0.34, 0.130, 200, 3),
+    # -- Tennis --------------------------------------------------------------
+    # Posted mainly for tour-level (ATP/WTA) main-draw matches, by a handful
+    # of books, off models thinner than the ones pricing the moneyline.
+    PropProfile("tennis_aces", "Total aces", "aces", "tennis",
+                0.48, 0.100, 400, 5,
+                "swings hard on surface and a player's own serve-speed news"),
+    PropProfile("tennis_double_faults", "Total double faults", "double_faults", "tennis",
+                0.40, 0.115, 250, 4,
+                "thin coverage, high variance -- a player's off day means nothing structural"),
 ]
 
 PROPS_BY_SPORT: dict[str, list[PropProfile]] = {}
@@ -321,6 +330,14 @@ SPORT_MARKETS: dict[str, list[MarketType]] = {
         MarketType.SPREAD, MarketType.MONEYLINE, MarketType.TOTAL,
         MarketType.TEAM_TOTAL, MarketType.FIRST_HALF_SPREAD,
         MarketType.FIRST_HALF_TOTAL, MarketType.PLAYER_PROP,
+    ],
+    "tennis": [
+        # No team total, no halves -- tennis has no such thing as a "team,"
+        # let alone a game/set split priced the way a football half is.
+        # SPREAD here means the games-handicap line (e.g. -3.5 games); TOTAL
+        # means total games in the match.
+        MarketType.MONEYLINE, MarketType.SPREAD, MarketType.TOTAL,
+        MarketType.PLAYER_PROP,
     ],
 }
 

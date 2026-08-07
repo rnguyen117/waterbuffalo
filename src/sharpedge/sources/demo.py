@@ -38,10 +38,18 @@ from ..models import (
 from ..oddsmath import (
     prob_to_american,
     prob_to_decimal,
+    prob_to_spread,
     spread_to_prob,
     total_over_prob,
 )
 from ..market.books import BOOKS, get_book
+from ..pricing.tennis import (
+    BASELINE_HOLD_PROB,
+    BEST_OF_3,
+    games_margin_sigma,
+    match_win_prob,
+    total_games_mean,
+)
 
 NFL_TEAMS = [
     "Kansas City Chiefs", "Buffalo Bills", "Philadelphia Eagles", "San Francisco 49ers",
@@ -60,6 +68,18 @@ WNBA_TEAMS = [
     "Las Vegas Aces", "New York Liberty", "Connecticut Sun", "Minnesota Lynx",
     "Seattle Storm", "Phoenix Mercury", "Indiana Fever", "Chicago Sky",
     "Atlanta Dream", "Washington Mystics", "Dallas Wings", "Los Angeles Sparks",
+]
+
+# Fictional tour players -- tennis has no "team," so home_team/away_team hold
+# a player name instead. Kept fictional for the same reason the injury/news
+# generator invents its own names rather than borrowing real athletes': this
+# is synthetic performance data, and attaching it to a real person's name
+# would misrepresent them even inside a demo.
+TENNIS_PLAYERS = [
+    "Elena Marchetti", "Nadia Volkov", "Sara Kimura", "Iris Bergstrom",
+    "Camille Rousseau", "Priya Anand", "Marta Kowalczyk", "Lucia Ferraro",
+    "Mateo Alcaraz", "Viktor Halvorsen", "Dario Conti", "Kenji Okamura",
+    "Owen Fitzgerald", "Rafael Duarte", "Milo Andersson", "Noah Kessler",
 ]
 
 # Team pool and typical combined final score, per sport. Explicit per sport
@@ -110,39 +130,97 @@ class DemoSource:
 
         for i in range(self.n_events):
             sport = sports[i % len(sports)]
-            teams = SPORT_TEAMS.get(sport, NBA_TEAMS)
-            pool = self.rng.sample(teams, 2)
-            home, away = pool[0], pool[1]
-
-            true_spread = round(self.rng.uniform(-10.5, 10.5) * 2) / 2  # home spread
-            base_total = SPORT_BASE_TOTAL.get(sport, 224.5)
-            true_total = round((base_total + self.rng.uniform(-8, 8)) * 2) / 2
-            hours_out = self.rng.uniform(2, 72)
-
-            event = Event(
-                event_id=f"{sport}-{i:03d}",
-                sport=sport,
-                league=sport.upper(),
-                home_team=home,
-                away_team=away,
-                start_time=now + timedelta(hours=hours_out),
-                metadata=self._metadata(sport, home, away),
-            )
-
-            self._truth[event.event_id] = {
-                "spread": true_spread,
-                "total": true_total,
-                "home_prob": spread_to_prob(true_spread, sport),
-            }
-
-            event.markets = [
-                self._moneyline(event, true_spread, now),
-                self._spread(event, true_spread, now),
-                self._total(event, true_total, now),
-            ]
+            if sport == "tennis":
+                event = self._tennis_event(i, now)
+            else:
+                event = self._team_event(sport, i, now)
             events.append(event)
 
         return events
+
+    def _team_event(self, sport: str, i: int, now: datetime) -> Event:
+        teams = SPORT_TEAMS.get(sport, NBA_TEAMS)
+        pool = self.rng.sample(teams, 2)
+        home, away = pool[0], pool[1]
+
+        true_spread = round(self.rng.uniform(-10.5, 10.5) * 2) / 2  # home spread
+        base_total = SPORT_BASE_TOTAL.get(sport, 224.5)
+        true_total = round((base_total + self.rng.uniform(-8, 8)) * 2) / 2
+        hours_out = self.rng.uniform(2, 72)
+
+        event = Event(
+            event_id=f"{sport}-{i:03d}",
+            sport=sport,
+            league=sport.upper(),
+            home_team=home,
+            away_team=away,
+            start_time=now + timedelta(hours=hours_out),
+            metadata=self._metadata(sport, home, away),
+        )
+
+        self._truth[event.event_id] = {
+            "spread": true_spread,
+            "total": true_total,
+            "home_prob": spread_to_prob(true_spread, sport),
+        }
+
+        event.markets = [
+            self._moneyline(event, true_spread, now),
+            self._spread(event, true_spread, now),
+            self._total(event, true_total, now),
+        ]
+        return event
+
+    def _tennis_event(self, i: int, now: datetime) -> Event:
+        """Tennis has no margin -- generate truth from serve percentages.
+
+        A team-sport event picks a true point spread and derives everything
+        else from it. Tennis has no such spread to pick: the real primitive
+        is each player's probability of winning a point on serve, so that is
+        what gets sampled here, with the moneyline, games-handicap spread,
+        and total games all derived from it through pricing.tennis rather
+        than the generic Gaussian-margin path the team sports use.
+        """
+        pool = self.rng.sample(TENNIS_PLAYERS, 2)
+        home, away = pool[0], pool[1]
+
+        # A symmetric perturbation around tour-average serve percentage,
+        # the same "hold edge" pricing.tennis.fit_hold_edge_to_market
+        # recovers from a quoted moneyline -- generated directly here since
+        # this is the hidden truth, not something being inverted from a
+        # price.
+        edge = self.rng.uniform(-0.05, 0.05)
+        p_home_point = BASELINE_HOLD_PROB + edge
+        p_away_point = BASELINE_HOLD_PROB - edge
+
+        p_home_win = match_win_prob(p_home_point, p_away_point, BEST_OF_3)
+        sigma = games_margin_sigma(BEST_OF_3)
+        true_spread = round(prob_to_spread(p_home_win, "tennis", sigma) * 2) / 2
+        true_total = round(total_games_mean(p_home_point, p_away_point, BEST_OF_3) * 2) / 2
+        hours_out = self.rng.uniform(2, 72)
+
+        event = Event(
+            event_id=f"tennis-{i:03d}",
+            sport="tennis",
+            league="TENNIS",
+            home_team=home,
+            away_team=away,
+            start_time=now + timedelta(hours=hours_out),
+            metadata=self._metadata("tennis", home, away),
+        )
+
+        self._truth[event.event_id] = {
+            "spread": true_spread,
+            "total": true_total,
+            "home_prob": p_home_win,
+        }
+
+        event.markets = [
+            self._moneyline(event, true_spread, now, p_home=p_home_win),
+            self._spread(event, true_spread, now),
+            self._total(event, true_total, now),
+        ]
+        return event
 
     # -- market construction ------------------------------------------------
 
@@ -248,8 +326,15 @@ class DemoSource:
                 )
         return prices
 
-    def _moneyline(self, event: Event, spread: float, now: datetime) -> Market:
-        p_home = spread_to_prob(spread, event.sport)
+    def _moneyline(
+        self, event: Event, spread: float, now: datetime, p_home: float | None = None
+    ) -> Market:
+        # p_home lets a caller supply a win probability computed by a more
+        # precise sport-specific model (tennis's serve-percentage chain)
+        # instead of round-tripping it through the generic Gaussian-margin
+        # approximation that spread_to_prob uses for team sports.
+        if p_home is None:
+            p_home = spread_to_prob(spread, event.sport)
         public = event.home_team if event.home_team in PUBLIC_TEAMS else (
             event.away_team if event.away_team in PUBLIC_TEAMS else None
         )

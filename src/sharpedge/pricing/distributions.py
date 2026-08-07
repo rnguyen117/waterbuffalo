@@ -314,6 +314,12 @@ STAT_MODELS: dict[str, StatModel] = {
     "saves": StatModel("negbin", 1.2, True),
     "goals": StatModel("poisson", 1.0, True),
     "player_points": StatModel("poisson", 1.0, True),
+    # --- Tennis ------------------------------------------------------------
+    # Both counts are overdispersed by match length as much as by skill -- a
+    # three-setter can nearly double either count over a straight-sets win,
+    # which a Poisson (variance = mean) badly understates.
+    "aces": StatModel("negbin", 1.5, True, "swings hard with match length and surface"),
+    "double_faults": StatModel("negbin", 1.4, True),
 }
 
 

@@ -99,7 +99,7 @@ class FilterConfig:
 class SourceConfig:
     provider: str = "demo"            # "demo" | "theoddsapi"
     api_key: str = ""
-    sports: list[str] = field(default_factory=lambda: ["nfl", "nba", "wnba"])
+    sports: list[str] = field(default_factory=lambda: ["nfl", "nba", "wnba", "tennis"])
     regions: list[str] = field(default_factory=lambda: ["us", "us2", "eu"])
     markets: list[str] = field(default_factory=lambda: ["h2h", "spreads", "totals"])
     news_feeds: list[str] = field(default_factory=list)
@@ -211,7 +211,7 @@ max_hours_to_start = 96.0
 [sources]
 provider = "demo"          # "demo" or "theoddsapi"
 # api_key = ""             # or set ODDS_API_KEY in the environment
-sports = ["nfl", "nba", "wnba"]
+sports = ["nfl", "nba", "wnba", "tennis"]
 regions = ["us", "us2", "eu"]
 markets = ["h2h", "spreads", "totals"]
 
