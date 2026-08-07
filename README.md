@@ -296,9 +296,9 @@ positions.
 **Goal-based risk reduction** (`risk/goals.py`) layers a second, slower dial
 on top of that: set a daily profit goal in units. A day that clears it
 *banks* the surplus, which reduces tomorrow's effective goal and scales
-`kelly_multiplier` down for the next card — continuously, not as a step
-function, and floored at `min_risk_multiplier` (0.4 by default) so betting
-never stops outright, which is what `stop_loss_drawdown` is already for.
+exposure down for the next card — continuously, not as a step function, and
+floored at `min_risk_multiplier` (0.4 by default) so betting never stops
+outright, which is what `stop_loss_drawdown` is already for.
 
 ```
 banked_surplus_t  = max(banked_surplus_{t-1} + (profit_units_{t-1} - goal), 0)
@@ -316,6 +316,18 @@ recomputed from the ledger's full settled history on every run
 (`state_from_history`) rather than saved separately, so the number in front
 of you is always reproducible from the ledger alone.
 
+`risk_multiplier` scales the exposure caps themselves
+(`max_total_exposure`, `max_per_bet`, `max_per_game`, `max_per_book`, and
+`bankroll.max_bet_fraction`) — not `kelly_multiplier`. That distinction
+matters: the portfolio optimizer re-solves the whole slate from the caps on
+every run and in practice pushes every stake up to whatever those caps
+allow, almost independent of `kelly_multiplier`, which turns out to mostly
+just gate whether a thin-edge bet is eligible at all. An earlier version of
+this scaled `kelly_multiplier` and, as a result, did not actually reduce
+risk on a day it should have — caught by testing the claim directly rather
+than trusting that the parameter with "risk" in its name was the one doing
+the work.
+
 It applies to the whole bankroll, not per sport: one goal, one risk dial,
 whatever mix of NFL, NBA, WNBA, MLB, and tennis produced yesterday's number.
 Configure it under `[goals]`:
@@ -326,6 +338,33 @@ enabled = true
 daily_goal_units = 3.0
 min_risk_multiplier = 0.4
 ```
+
+**Target-seeking** is the mirror image, for the opposite question: given
+today's actual screened edges, what would it take to be *on pace* for the
+goal? `auto_target = true` (or `sharp-edge card --target-profit 5`) has the
+card search for the smallest exposure scale — always ≥ 1.0×, capped at
+`max_target_scale` (1.5 by default) — that makes today's expected profit
+meet the day's remaining goal (`effective_goal`, after any banked surplus).
+It only ever scales *up* from the configured baseline, and only up to that
+ceiling: doubling every exposure cap roughly quadruples the depth of a bad
+run, so this stays deliberately closer to 1× than to 2×, and a day already
+on pace at baseline sizing is left alone rather than shrunk to land exactly
+on the goal. If even the ceiling falls short, the card says so plainly —
+"today's screened edges support at most 2.1u, short of the 5.0u goal" —
+because that is a real shortage of qualifying bets, not something more
+exposure would fix, and the tool says so instead of quietly overbetting to
+chase a number.
+
+```bash
+sharp-edge card --target-profit 5   # size up (bounded) to pursue 5u today
+```
+
+The two dials compose: risk reduction can shrink the effective baseline
+below 1.0× first (a day already ahead of pace), and target-seeking then
+searches upward *from that reduced baseline*, still bounded by the same
+ceiling relative to the original configured caps — so being partly ahead of
+the multi-day goal never licenses full-ceiling risk just because today's
+specific number hasn't been hit yet.
 
 ### Tracking
 
@@ -373,6 +412,7 @@ product working. A screen that finds fifteen edges every day has found zero.
 ```bash
 sharp-edge card [-v] [--json out.json] [--markdown card.md] [--log]
 sharp-edge card --unit-size 50 --kelly-multiplier 0.25   # stakes shown in $ and units
+sharp-edge card --target-profit 5   # size up (bounded) to pursue 5u today
 sharp-edge devig -110 -110        # inspect a market's true prices
 sharp-edge ladder strikeouts 6.5 -115 -105   # derive a full alternate ladder
 sharp-edge kelly 0.55 -110 --unit-size 50    # size a single bet, in $ and units
@@ -466,7 +506,7 @@ that they are carried at near-zero weight.
 pip install pytest && pytest
 ```
 
-412 tests, no network required. They cover the math against known values
+430 tests, no network required. They cover the math against known values
 (-110 is 52.38%, three is the most common NFL margin, Kelly at p=0.6 and even
 money is 0.2), and the behaviors that matter: the screen must find the stale
 lines the demo generator plants, and it must never recommend both sides of a

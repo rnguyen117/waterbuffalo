@@ -99,6 +99,44 @@ class TestFullPipeline:
         assert result.considered > 0
         assert isinstance(result.bets, list)
 
+    def test_screen_then_stake_matches_run(self, tmp_path):
+        # run() is documented as screen() followed by stake(); if that ever
+        # drifts, everything built on re-staking a screened slate (the
+        # target-profit solver) would silently produce a different card
+        # than a plain `sharp-edge card` run.
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        now = pipeline.utcnow()
+        via_run = pipeline.run(inputs, cfg, now=now)
+        screened = pipeline.screen(inputs, cfg, now=now)
+        via_split = pipeline.stake(screened, cfg, now=now)
+        assert len(via_run.bets) == len(via_split.bets)
+        assert via_run.total_stake == pytest.approx(via_split.total_stake)
+        assert via_run.expected_profit == pytest.approx(via_split.expected_profit)
+
+    def test_stake_is_reusable_across_different_exposure_caps(self, tmp_path):
+        # The whole point of the split: re-staking the same screened slate
+        # at a different exposure scale should change the stakes without
+        # needing to re-screen the market.
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        screened = pipeline.screen(inputs, cfg)
+
+        baseline = pipeline.stake(screened, cfg)
+
+        cfg_bigger = Config()
+        cfg_bigger.data_dir = str(tmp_path)
+        cfg_bigger.portfolio.max_total_exposure *= 2
+        cfg_bigger.portfolio.max_per_bet *= 2
+        cfg_bigger.portfolio.max_per_game *= 2
+        cfg_bigger.portfolio.max_per_book *= 2
+        scaled = pipeline.stake(screened, cfg_bigger)
+
+        assert scaled.total_stake > baseline.total_stake
+        assert scaled.expected_profit > baseline.expected_profit
+
     def test_finds_the_planted_stale_lines(self, tmp_path):
         # The demo generator deliberately leaves some soft books behind the
         # market. With props disabled the card is core markets only, so the

@@ -121,6 +121,18 @@ class GoalConfig:
     # well above zero: a fully banked day still bets, just smaller, rather
     # than stopping outright -- stopping is what stop_loss_drawdown is for.
     min_risk_multiplier: float = 0.4
+    # Auto-size *up* toward the goal on a day that is not yet on pace to
+    # clear it -- the mirror image of the risk cut above. Off by default:
+    # this is an explicit opt-in to more risk on demand, not a default
+    # behavior. See risk/goals.py's solve_exposure_scale_for_target.
+    auto_target: bool = False
+    # Ceiling on how far the configured exposure caps may be scaled up in
+    # pursuit of the goal, however far short that still leaves it. 1.5 means
+    # never more than 1.5x today's configured max_total_exposure/max_per_bet/
+    # max_per_game/max_per_book -- doubling those roughly quadruples the
+    # depth of a bad run (risk/bankroll.py), so this stays deliberately
+    # closer to 1 than to 2.
+    max_target_scale: float = 1.5
 
 
 @dataclass
@@ -240,6 +252,10 @@ markets = ["h2h", "spreads", "totals"]
 enabled = true
 daily_goal_units = 3.0
 min_risk_multiplier = 0.4
+# Auto-size *up* toward the goal on a day that is not on pace yet. Off by
+# default -- this is explicit opt-in to more risk, not a default behavior.
+auto_target = false
+max_target_scale = 1.5
 
 [accounts]
 # Books you hold funded accounts with. Leave empty to consider all of them.

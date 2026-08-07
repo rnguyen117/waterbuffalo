@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from sharpedge.risk.goals import GoalState, next_goal_state, state_from_history
+from sharpedge.risk.goals import (
+    GoalState,
+    TargetSeekResult,
+    next_goal_state,
+    solve_exposure_scale_for_target,
+    state_from_history,
+)
 
 
 class TestNextGoalState:
@@ -134,3 +140,72 @@ class TestStateFromHistory:
             banked = max(banked + (history[day] - goal), 0.0)
         state = state_from_history(history, goal_units=goal)
         assert state.banked_surplus == pytest.approx(banked)
+
+
+class TestSolveExposureScaleForTarget:
+    """Uses synthetic, deterministic profit curves rather than the real
+    pipeline -- the solver only assumes monotonicity, and testing it against
+    hand-built curves pins down its own logic independent of whatever the
+    portfolio optimizer happens to produce on a given day. The real curve is
+    exercised separately in tests/test_pipeline.py against pipeline.stake.
+    """
+
+    def _linear(self, slope=2.0):
+        return lambda scale: slope * scale
+
+    def _capped_linear(self, slope=2.0, cap_scale=1.3):
+        # Rises linearly, then plateaus past cap_scale -- mimics a portfolio
+        # optimizer hitting its per-bet/per-game caps before total exposure.
+        return lambda scale: slope * min(scale, cap_scale)
+
+    def test_baseline_already_clears_goal_needs_no_scale_up(self):
+        result = solve_exposure_scale_for_target(self._linear(slope=5.0), target_profit_units=3.0)
+        assert result.scale == 1.0
+        assert result.achieved
+        assert result.expected_profit_units == pytest.approx(5.0)
+
+    def test_finds_the_minimal_sufficient_scale(self):
+        # slope=2 means profit(scale) = 2*scale; target=3 -> scale=1.5 exactly.
+        result = solve_exposure_scale_for_target(
+            self._linear(slope=2.0), target_profit_units=3.0, max_scale=2.0, tol=1e-4
+        )
+        assert result.achieved
+        assert result.scale == pytest.approx(1.5, abs=1e-3)
+        assert result.expected_profit_units == pytest.approx(3.0, abs=1e-2)
+
+    def test_never_scales_below_one(self):
+        # Even a target barely above baseline should not return scale < 1.0.
+        result = solve_exposure_scale_for_target(self._linear(slope=1.0), target_profit_units=1.0001)
+        assert result.scale >= 1.0
+
+    def test_unreachable_target_reports_shortfall_honestly(self):
+        result = solve_exposure_scale_for_target(
+            self._capped_linear(slope=1.0, cap_scale=1.2), target_profit_units=10.0, max_scale=1.5
+        )
+        assert not result.achieved
+        assert result.scale == 1.5
+        assert result.expected_profit_units == pytest.approx(1.2, abs=1e-6)
+        assert "short of" in result.note
+
+    def test_respects_the_max_scale_ceiling(self):
+        result = solve_exposure_scale_for_target(
+            self._linear(slope=2.0), target_profit_units=100.0, max_scale=1.5
+        )
+        assert result.scale <= 1.5
+        assert not result.achieved
+
+    def test_rejects_nonpositive_target(self):
+        with pytest.raises(ValueError):
+            solve_exposure_scale_for_target(self._linear(), target_profit_units=0.0)
+        with pytest.raises(ValueError):
+            solve_exposure_scale_for_target(self._linear(), target_profit_units=-1.0)
+
+    def test_rejects_max_scale_below_one(self):
+        with pytest.raises(ValueError):
+            solve_exposure_scale_for_target(self._linear(), target_profit_units=1.0, max_scale=0.9)
+
+    def test_result_is_a_frozen_dataclass(self):
+        result = solve_exposure_scale_for_target(self._linear(slope=5.0), target_profit_units=3.0)
+        assert isinstance(result, TargetSeekResult)
+        with pytest.raises(Exception):
+            result.scale = 99.0

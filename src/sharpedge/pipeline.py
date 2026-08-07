@@ -22,6 +22,7 @@ in what it throws away.
 
 from __future__ import annotations
 
+import copy
 import math
 from dataclasses import dataclass
 from datetime import datetime
@@ -142,14 +143,37 @@ class Inputs:
     public: list[PublicBetting]
 
 
-def run(
+@dataclass
+class ScreenResult:
+    """Everything expensive: every market priced, signaled, and screened.
+
+    Deliberately independent of bankroll and exposure caps -- "what's worth
+    betting" does not depend on "how much to bet," and separating them is
+    what lets a caller re-stake the same screened slate at a different
+    exposure level (a different Kelly multiplier, a wider or narrower
+    portfolio cap) without re-running consensus and every signal again. That
+    is the whole reason ``run`` is split into ``screen`` + ``stake``: a
+    target-profit search needs to re-solve the staking step ten or twenty
+    times, and re-screening the market on every iteration would make that
+    fifteen seconds slower for no reason -- nothing about which bets clear
+    the EV floor changes when the exposure cap does.
+    """
+
+    shortlist: list[BetCandidate]
+    ranked: list
+    opportunities: list[Opportunity]
+    skipped: list[tuple[str, str]]
+    considered: int
+
+
+def screen(
     inputs: Inputs,
     config: Config,
     history: LineHistory | None = None,
     engine: SignalEngine | None = None,
     now: datetime | None = None,
-) -> SlateResult:
-    """Produce a staked card from fetched inputs."""
+) -> ScreenResult:
+    """Price, signal, and screen every market -- the expensive, cap-independent half of a run."""
     now = now or utcnow()
     engine = engine or default_engine(config)
     books = bettable_books(config.available_books)
@@ -356,26 +380,77 @@ def run(
     )
     shortlist = [item.bet for item in ranked]
 
+    return ScreenResult(
+        shortlist=shortlist,
+        ranked=ranked,
+        opportunities=opportunities,
+        skipped=skipped,
+        considered=considered,
+    )
+
+
+def stake(
+    screened: ScreenResult,
+    config: Config,
+    now: datetime | None = None,
+) -> SlateResult:
+    """Size the screened slate under the current exposure caps.
+
+    Split out from ``screen`` specifically so a caller can re-stake the same
+    screened candidates at a different ``config.portfolio``/
+    ``config.bankroll.max_bet_fraction`` without paying for consensus and
+    signal evaluation again -- see ``risk.goals.solve_exposure_scale_for_target``.
+
+    Stakes shallow copies of ``screened.shortlist``, not the candidates
+    themselves: ``portfolio.optimize`` sets ``.stake``/``.kelly_fraction`` on
+    whatever it is handed, and a caller re-staking the same screened slate
+    at several exposure scales in a row (exactly what the target-profit
+    solver does) needs each call's result to be independent -- otherwise a
+    later call silently overwrites an earlier one's stakes through the
+    shared objects, corrupting any result still being held onto.
+    """
+    now = now or utcnow()
+    shortlist = [copy.copy(bet) for bet in screened.shortlist]
+    original_id_by_copy_id = {
+        id(c): id(o) for c, o in zip(shortlist, screened.shortlist)
+    }
+
     constraints = config.portfolio
     result = portfolio.optimize(shortlist, config.bankroll.starting, constraints)
 
-    staked = {id(bet) for bet in result.bets}
-    ordered = [bet for bet in shortlist if id(bet) in staked]
+    staked_by_copy_id = {id(bet): bet for bet in result.bets}
+    ordered = [staked_by_copy_id[id(c)] for c in shortlist if id(c) in staked_by_copy_id]
+    staked_original_ids = {
+        original_id_by_copy_id[id(c)] for c in shortlist if id(c) in staked_by_copy_id
+    }
 
-    stats = summarize_card([item for item in ranked if id(item.bet) in staked])
-    wins, losses = expected_record([i for i in ranked if id(i.bet) in staked])
+    stats = summarize_card([item for item in screened.ranked if id(item.bet) in staked_original_ids])
+    wins, losses = expected_record([i for i in screened.ranked if id(i.bet) in staked_original_ids])
     stats["expected_record"] = (wins, losses)
 
     return SlateResult(
         generated_at=now,
         bets=ordered,
-        opportunities=sorted(opportunities, key=lambda o: -o.profit_pct)[:25],
-        considered=considered,
+        opportunities=sorted(screened.opportunities, key=lambda o: -o.profit_pct)[:25],
+        considered=screened.considered,
         bankroll=config.bankroll.starting,
-        skipped=skipped,
-        ranked=ranked,
+        skipped=screened.skipped,
+        ranked=screened.ranked,
         card_stats=stats,
     )
+
+
+def run(
+    inputs: Inputs,
+    config: Config,
+    history: LineHistory | None = None,
+    engine: SignalEngine | None = None,
+    now: datetime | None = None,
+) -> SlateResult:
+    """Produce a staked card from fetched inputs."""
+    now = now or utcnow()
+    screened = screen(inputs, config, history=history, engine=engine, now=now)
+    return stake(screened, config, now=now)
 
 
 def _build_candidate(

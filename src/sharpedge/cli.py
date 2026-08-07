@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import sys
 from pathlib import Path
 
@@ -59,6 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_card.add_argument("--no-props", action="store_true", help="skip player props")
     p_card.add_argument("--props-only", action="store_true", help="player props only")
+    p_card.add_argument(
+        "--target-profit", type=float,
+        help="daily profit goal in units -- scales exposure up (capped at "
+             "goals.max_target_scale) to pursue it if today's screened "
+             "edges fall short of it at normal sizing. Sets goals.enabled "
+             "and goals.auto_target for this run.",
+    )
 
     sub.add_parser("init", help="write a starter config file").add_argument(
         "path", nargs="?", default="sharp-edge.toml"
@@ -127,6 +135,27 @@ def main(argv: list[str] | None = None) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _scale_exposure(cfg: config_module.Config, factor: float) -> None:
+    """Scale every exposure lever that actually controls final stake size.
+
+    Deliberately not ``bankroll.kelly_multiplier``: the portfolio optimizer
+    re-solves the whole slate under ``config.portfolio``'s caps starting
+    from the per-bet Kelly fractions as a mere initial guess, and in
+    practice pushes every stake up to whatever those caps allow regardless
+    of the multiplier -- see the comment in ``pipeline.stake``'s docstring
+    and the analysis behind this module's goal-scaling logic. The caps
+    themselves (plus ``bankroll.max_bet_fraction``, which gates whether a
+    thin-edge bet is even eligible before the optimizer sees it) are the
+    real levers, so those are what both risk reduction and target-seeking
+    scale.
+    """
+    cfg.portfolio.max_total_exposure *= factor
+    cfg.portfolio.max_per_bet *= factor
+    cfg.portfolio.max_per_game *= factor
+    cfg.portfolio.max_per_book *= factor
+    cfg.bankroll.max_bet_fraction *= factor
+
+
 def _cmd_card(args, cfg) -> int:
     if args.bankroll:
         cfg.bankroll.starting = args.bankroll
@@ -148,6 +177,10 @@ def _cmd_card(args, cfg) -> int:
                 "sharpedge.models", fromlist=["MarketType"]
             ).MarketType if not m.is_prop
         ]
+    if args.target_profit is not None:
+        cfg.goals.enabled = True
+        cfg.goals.auto_target = True
+        cfg.goals.daily_goal_units = args.target_profit
 
     try:
         inputs = pipeline.fetch_inputs(cfg)
@@ -166,13 +199,17 @@ def _cmd_card(args, cfg) -> int:
         ledger.close()
 
     goal_state = None
+    target_result = None
     if cfg.goals.enabled:
-        from .risk.goals import state_from_history
+        from .risk.goals import solve_exposure_scale_for_target, state_from_history
 
         goal_state = state_from_history(
             daily_pnl, cfg.goals.daily_goal_units, cfg.goals.min_risk_multiplier
         )
-        cfg.bankroll.kelly_multiplier *= goal_state.risk_multiplier
+        # Ahead of pace: shrink exposure toward min_risk_multiplier. This is
+        # the *only* direction this scales exposure below the configured
+        # baseline -- target-seeking below never scales it down further.
+        _scale_exposure(cfg, goal_state.risk_multiplier)
         if goal_state.risk_multiplier < 0.999:
             print(
                 f"Goal tracking: {goal_state.banked_surplus:.2f}u banked, "
@@ -180,11 +217,34 @@ def _cmd_card(args, cfg) -> int:
                 f"({goal_state.effective_goal:.2f}u still needed today)\n"
             )
 
-    history = LineHistory(Path(cfg.data_dir) / "lines.db")
-    try:
-        result = pipeline.run(inputs, cfg, history=history)
-    finally:
-        history.close()
+        if cfg.goals.auto_target and goal_state.effective_goal > 0:
+            history = LineHistory(Path(cfg.data_dir) / "lines.db")
+            try:
+                screened = pipeline.screen(inputs, cfg, history=history)
+            finally:
+                history.close()
+
+            def profit_at(scale: float, _screened=screened, _base=cfg) -> float:
+                trial = copy.deepcopy(_base)
+                _scale_exposure(trial, scale)
+                return pipeline.stake(_screened, trial).expected_profit / unit
+
+            target_result = solve_exposure_scale_for_target(
+                profit_at, goal_state.effective_goal, max_scale=cfg.goals.max_target_scale
+            )
+            _scale_exposure(cfg, target_result.scale)
+            result = pipeline.stake(screened, cfg)
+            if target_result.scale > 1.001:
+                print(f"Target-seeking: {target_result.note}\n")
+            elif not target_result.achieved:
+                print(f"Target-seeking: {target_result.note}\n")
+
+    if target_result is None:
+        history = LineHistory(Path(cfg.data_dir) / "lines.db")
+        try:
+            result = pipeline.run(inputs, cfg, history=history)
+        finally:
+            history.close()
 
     result.card_stats = dict(result.card_stats or {})
     result.card_stats["scorecard"] = scorecard
@@ -196,6 +256,13 @@ def _cmd_card(args, cfg) -> int:
             "progress_fraction": round(goal_state.progress_fraction, 4),
             "risk_multiplier": round(goal_state.risk_multiplier, 4),
         }
+        if target_result is not None:
+            result.card_stats["goal"]["target_seek"] = {
+                "scale": round(target_result.scale, 4),
+                "achieved": target_result.achieved,
+                "expected_profit_units": round(target_result.expected_profit_units, 4),
+                "note": target_result.note,
+            }
 
     print(report.console(result, verbose=args.verbose, unit_size=unit))
 
