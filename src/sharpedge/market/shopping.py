@@ -100,7 +100,11 @@ def synthetic_hold(market: Market, available: set[str] | None = None) -> float |
 
 
 def find_arbitrage(
-    event: Event, market: Market, available: set[str] | None = None, min_profit: float = 0.002
+    event: Event,
+    market: Market,
+    available: set[str] | None = None,
+    min_profit: float = 0.002,
+    max_plausible_profit: float = 0.08,
 ) -> Opportunity | None:
     """Detect a guaranteed profit from betting every outcome across books.
 
@@ -108,6 +112,14 @@ def find_arbitrage(
     smaller book, and consistently taking them is the fastest way to get
     limited. Treated here as a signal that the market is dislocated as much
     as a bet to place.
+
+    Genuine arbitrage in a live, correctly-parsed two-way market is a
+    fraction of a percent to a couple percent -- the same principle
+    pricing.ev.implausible_edge applies to a regular bet's EV. A market
+    "arbitrage" claiming 20%, let alone 40%, essentially never happens
+    between two real, current prices; it means one side is stale, wrong, or
+    about to be pulled, and reporting it as free money is how an automated
+    bettor fires at a price that no longer exists.
     """
     best = best_available(market, available)
     if len(best) < len(market.outcomes):
@@ -116,6 +128,8 @@ def find_arbitrage(
     if total_implied >= 1.0 - min_profit:
         return None
     profit = (1.0 / total_implied) - 1.0
+    if profit > max_plausible_profit:
+        return None
     return Opportunity(
         kind="arbitrage",
         event=event,
@@ -158,6 +172,13 @@ def find_middles(
     every other result, so a middle is worth taking when the probability of
     landing inside exceeds roughly the combined juice -- which in football is
     common precisely because the gaps often straddle 3 and 7.
+
+    Unlike find_arbitrage/find_low_hold, this is not given a plausibility
+    ceiling: a middle is a probability-weighted bet, not risk-free
+    arithmetic, and a wide window straddling a cluster of key numbers can
+    legitimately clear a double-digit expected profit_pct without any data
+    problem at all -- a 7-point NFL window straddling 3 and 7 is exactly
+    that case, not an anomaly to reject.
     """
     if market.market_type not in (
         MarketType.SPREAD,
@@ -238,15 +259,23 @@ def find_low_hold(
     market: Market,
     available: set[str] | None = None,
     threshold: float = 0.01,
+    max_plausible_profit: float = 0.08,
 ) -> Opportunity | None:
     """Two-sided positions where the combined hold is near zero.
 
     Not free money, but close to it: at sub-1% hold you can take a position on
     both sides for almost nothing, which is how bonuses get cleared and how
     exposure gets rebalanced without paying real vig.
+
+    A deeply negative hold here is the same failure mode find_arbitrage
+    guards against -- see its docstring -- so this rejects on the same
+    plausibility ceiling rather than reporting a dislocated market as a
+    bigger version of the same opportunity.
     """
     h = synthetic_hold(market, available)
     if h is None or h > threshold:
+        return None
+    if h < -max_plausible_profit:
         return None
     best = best_available(market, available)
     return Opportunity(

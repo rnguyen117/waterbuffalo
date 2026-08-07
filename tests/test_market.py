@@ -271,6 +271,29 @@ class TestShopping:
         ], market_type=MarketType.MONEYLINE)
         assert find_arbitrage(event(), m) is None
 
+    def test_implausibly_large_arbitrage_is_rejected(self):
+        # Both sides priced as underdogs (+185/+184) is not a real two-way
+        # market -- exactly one side must be the favorite. This shape (both
+        # legs positive, ~42% "profit") showed up against a real live feed
+        # during development; it is a stale or mismatched quote, not $420
+        # of free money on a $1,000 bet, and must not be reported as one.
+        m = market([
+            price("bovada", "Home", +185),
+            price("fanduel", "Away", +184),
+        ], market_type=MarketType.MONEYLINE)
+        assert find_arbitrage(event(), m) is None
+
+    def test_arbitrage_within_plausible_range_still_detected(self):
+        # A real, if generous, arb -- must not get caught by the same
+        # ceiling that rejects the implausible case above.
+        m = market([
+            price("draftkings", "Home", +105),
+            price("espnbet", "Away", +100),
+        ], market_type=MarketType.MONEYLINE)
+        arb = find_arbitrage(event(), m)
+        assert arb is not None
+        assert arb.profit_pct < 0.08
+
     def test_arbitrage_stakes_equalize_payouts(self):
         stakes = arbitrage_stakes([("a", +110), ("b", +110)], 1000)
         assert sum(stakes.values()) == pytest.approx(1000)
@@ -284,6 +307,16 @@ class TestShopping:
             price("espnbet", "Away", -104),
         ], market_type=MarketType.MONEYLINE)
         assert find_low_hold(event(), m, threshold=0.02) is not None
+
+    def test_implausibly_negative_hold_is_rejected(self):
+        # Same failure mode as the arbitrage case above, reached through
+        # find_low_hold instead: a deeply dislocated "market" must not be
+        # reported as an outsized version of a legitimate low-hold spot.
+        m = market([
+            price("bovada", "Home", +185),
+            price("fanduel", "Away", +184),
+        ], market_type=MarketType.MONEYLINE)
+        assert find_low_hold(event(), m, threshold=0.02) is None
 
     def test_middle_found_across_books(self):
         m = market([
