@@ -73,6 +73,17 @@ class FilterConfig:
     min_books: int = 3
     max_hours_to_start: float = 96.0
     min_hours_to_start: float = 0.0
+    # The card should be one slate, not a blend of tonight's MLB and next
+    # Sunday's NFL -- restrict every sport to games on the same calendar
+    # day. "Day" is anchored to schedule_timezone (US Eastern by default,
+    # the de facto reference every American league schedules around) rather
+    # than UTC, because a UTC-midnight cutoff would incorrectly split late
+    # West Coast games from the rest of that night's slate. A sport with
+    # nothing on today's date simply contributes zero bets rather than
+    # reaching days or weeks ahead to fill the card -- see max_hours_to_start
+    # above, which still applies underneath this as a secondary cap.
+    same_day_only: bool = True
+    schedule_timezone: str = "America/New_York"
     exclude_markets: list[str] = field(default_factory=list)
     exclude_leagues: list[str] = field(default_factory=list)
     # How many bets the daily card should contain. The engine ranks every
@@ -249,6 +260,12 @@ min_ev_lower = 0.0
 max_hold = 0.07
 min_books = 3
 max_hours_to_start = 96.0
+# One slate, not a blend of tonight's MLB and next Sunday's NFL: restrict
+# every sport to games on the same calendar day (anchored to
+# schedule_timezone, US Eastern by default). A sport with nothing today
+# contributes zero bets rather than reaching days ahead to fill the card.
+same_day_only = true
+schedule_timezone = "America/New_York"
 
 [sources]
 provider = "demo"          # "demo" or "theoddsapi"

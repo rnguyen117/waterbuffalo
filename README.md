@@ -228,6 +228,33 @@ with known preferences, and that shows up hardest where nobody corrects it:
   weak signal it is — public data covers a small unrepresentative slice, and
   "fade the public" has been known long enough to be partly priced.
 
+### One slate, one date
+
+The card is today's games, full stop — not a blend of tonight's MLB and
+next Sunday's NFL just because the NFL had nothing closer to fill the card
+with. `filters.same_day_only` (on by default) drops any event that doesn't
+fall on the same calendar day as every other event on the card. A sport
+with nothing today simply contributes zero bets rather than reaching days
+or weeks ahead.
+
+"Day" is anchored to `filters.schedule_timezone` (US Eastern by default)
+rather than UTC, because any prime-time game already crosses into the next
+UTC date — a 1pm ET game and a 9pm ET game on the *same* Eastern calendar
+day land on two different UTC dates (18:00 UTC vs. 02:00 UTC the next day),
+which a raw UTC-date comparison would read as two different slates. Eastern
+is the reference every American league schedules around, not a claim about
+where games are played.
+
+```toml
+[filters]
+same_day_only = true
+schedule_timezone = "America/New_York"
+```
+
+`max_hours_to_start` still applies underneath this as a secondary cap, so
+turning `same_day_only` off falls back to the plain rolling window that was
+the only behavior before this existed.
+
 ### The daily top 10
 
 Every qualifying bet across every market is ranked and cut to a fixed card.
@@ -528,7 +555,7 @@ that they are carried at near-zero weight.
 pip install pytest && pytest
 ```
 
-459 tests, no network required. They cover the math against known values
+465 tests, no network required. They cover the math against known values
 (-110 is 52.38%, three is the most common NFL margin, Kelly at p=0.6 and even
 money is 0.2), and the behaviors that matter: the screen must find the stale
 lines the demo generator plants, and it must never recommend both sides of a

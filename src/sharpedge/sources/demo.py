@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from ..models import (
     Event,
@@ -138,6 +139,11 @@ PUBLIC_TEAMS = {
     "New York Yankees", "Los Angeles Dodgers",
 }
 
+# Matches filters.schedule_timezone's default in config.py -- see
+# DemoSource._same_day_hours_out for why this needs to agree with the
+# pipeline's own same-day filter rather than use UTC.
+_SCHEDULE_TZ = ZoneInfo("America/New_York")
+
 
 class DemoSource:
     """Generates a realistic slate. Seeded, so runs are reproducible."""
@@ -149,6 +155,24 @@ class DemoSource:
         self.n_events = n_events
         self.stale_rate = stale_rate
         self._truth: dict[str, dict] = {}
+
+    def _same_day_hours_out(self, now: datetime) -> float:
+        """A lead time that keeps the generated event on today's US-Eastern date.
+
+        pipeline.py's same_day_only filter is on by default -- a slate
+        spread across three days the way this used to generate them would
+        just get filtered down to whatever sliver happens to survive,
+        which depends on what time of day the demo happens to run and
+        defeats the point of a same-day filter existing at all. Bounding
+        generation to what is actually left of "today" (Eastern, matching
+        the filter's own default reference zone) keeps the demo internally
+        consistent with the same rule a live run is held to.
+        """
+        et_now = now.astimezone(_SCHEDULE_TZ)
+        et_midnight = et_now.replace(hour=23, minute=59, second=0, microsecond=0)
+        remaining_hours = max((et_midnight - et_now).total_seconds() / 3600.0, 0.25)
+        lead = max(min(remaining_hours, 14.0), 0.25)
+        return self.rng.uniform(0.25, lead)
 
     # -- odds ---------------------------------------------------------------
 
@@ -177,7 +201,7 @@ class DemoSource:
         base_total = SPORT_BASE_TOTAL.get(sport, 224.5)
         total_swing = SPORT_TOTAL_SWING.get(sport, 8.0)
         true_total = round((base_total + self.rng.uniform(-total_swing, total_swing)) * 2) / 2
-        hours_out = self.rng.uniform(2, 72)
+        hours_out = self._same_day_hours_out(now)
 
         event = Event(
             event_id=f"{sport}-{i:03d}",
@@ -228,7 +252,7 @@ class DemoSource:
         sigma = games_margin_sigma(BEST_OF_3)
         true_spread = round(prob_to_spread(p_home_win, "tennis", sigma) * 2) / 2
         true_total = round(total_games_mean(p_home_point, p_away_point, BEST_OF_3) * 2) / 2
-        hours_out = self.rng.uniform(2, 72)
+        hours_out = self._same_day_hours_out(now)
 
         event = Event(
             event_id=f"tennis-{i:03d}",

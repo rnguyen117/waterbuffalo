@@ -26,6 +26,7 @@ import copy
 import math
 from dataclasses import dataclass
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from .config import Config
 from .market import consensus, movement, props as props_module, public as public_module, shopping
@@ -143,6 +144,20 @@ class Inputs:
     public: list[PublicBetting]
 
 
+def _same_schedule_day(event_start: datetime, now: datetime, tz: ZoneInfo) -> bool:
+    """Whether an event falls on the same calendar day as ``now``, in ``tz``.
+
+    Anchored to a specific timezone rather than UTC on purpose: any prime
+    time game already crosses into the next UTC date -- a 1pm ET game and a
+    9pm ET game on the *same* Eastern calendar day are on two different UTC
+    dates (18:00 UTC vs. 02:00 UTC the next day), which a raw UTC-date
+    comparison would incorrectly read as different slates. US Eastern is
+    the default because it is what every American league schedules around,
+    not because games are played there.
+    """
+    return event_start.astimezone(tz).date() == now.astimezone(tz).date()
+
+
 @dataclass
 class ScreenResult:
     """Everything expensive: every market priced, signaled, and screened.
@@ -187,6 +202,8 @@ def screen(
         (p.event_id, p.market_type, p.outcome): p for p in inputs.public
     }
 
+    schedule_tz = ZoneInfo(config.filters.schedule_timezone) if config.filters.same_day_only else None
+
     for event in inputs.events:
         hours = event.hours_to_start(now)
         if hours > config.filters.max_hours_to_start:
@@ -194,6 +211,9 @@ def screen(
             continue
         if hours < config.filters.min_hours_to_start:
             skipped.append((event.name, "too close to start time"))
+            continue
+        if schedule_tz is not None and not _same_schedule_day(event.start_time, now, schedule_tz):
+            skipped.append((event.name, f"not on today's slate ({config.filters.schedule_timezone})"))
             continue
         if event.league in config.filters.exclude_leagues:
             continue
@@ -949,16 +969,25 @@ def fetch_inputs(config: Config) -> Inputs:
         )
         events = source.fetch_events(config.sources.sports)
 
-        # Props are priced per event, not bulk per sport -- fetch them only
-        # for the slate that will actually survive the near-term filter,
-        # never the whole season fetch_events returns. Same reasoning that
-        # already gates news/injuries: do not spend real cost (here, API
-        # credits) on games nobody is about to bet on.
+        # fetch_events returns a whole season's schedule (books post lines
+        # months out) -- both props and weather cost a real request per
+        # event, so both need the same near-term slice pipeline.screen()
+        # will actually keep, computed once and shared rather than each
+        # silently iterating every event fetch_events returned. Missing
+        # this for weather specifically once made a live run hang for
+        # minutes fetching forecasts for ~300 NFL events three weeks out.
+        now = utcnow()
+        near_term = [
+            e
+            for e in events
+            if e.hours_to_start(now) <= config.filters.max_hours_to_start
+            and (
+                not config.filters.same_day_only
+                or _same_schedule_day(e.start_time, now, ZoneInfo(config.filters.schedule_timezone))
+            )
+        ]
+
         if config.sources.live_props and config.filters.include_props:
-            now = utcnow()
-            near_term = [
-                e for e in events if e.hours_to_start(now) <= config.filters.max_hours_to_start
-            ]
             source.fetch_props(near_term, max_events=config.sources.live_props_max_events)
 
         news: list[NewsItem] = []
@@ -977,7 +1006,7 @@ def fetch_inputs(config: Config) -> Inputs:
         if config.sources.live_weather:
             from .sources.live_weather import NWSWeatherSource
 
-            weather = NWSWeatherSource().fetch_weather(events)
+            weather = NWSWeatherSource().fetch_weather(near_term)
 
         # No free, reliable, official source for real ticket%/handle% data
         # exists -- real-time public-betting splits are a paid product

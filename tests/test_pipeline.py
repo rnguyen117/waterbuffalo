@@ -88,6 +88,98 @@ class TestDemoSource:
         assert total_line(wnba_events) < total_line(nba_events)
 
 
+class TestSameDayFilter:
+    """filters.same_day_only: one slate, one calendar date, not a blend of
+    tonight's MLB and next Sunday's NFL."""
+
+    def _inputs(self, events):
+        return pipeline.Inputs(events=events, news=[], injuries=[], weather={}, public=[])
+
+    def _event(self, event_id, start_time, sport="nfl"):
+        from sharpedge.models import Event
+
+        # Distinct team names per event_id -- Event.name is derived from
+        # them, and two events sharing the same names would collide in any
+        # assertion keyed on result.skipped's (name, reason) pairs.
+        return Event(
+            event_id=event_id, sport=sport, league=sport.upper(),
+            home_team=f"Home {event_id}", away_team=f"Away {event_id}", start_time=start_time,
+        )
+
+    def test_same_schedule_day_unit(self):
+        from zoneinfo import ZoneInfo
+
+        et = ZoneInfo("America/New_York")
+        now = datetime(2026, 1, 15, 20, 0, tzinfo=et)  # 8pm ET
+        same_day_later = datetime(2026, 1, 15, 23, 30, tzinfo=et)
+        next_day = datetime(2026, 1, 16, 0, 30, tzinfo=et)
+        assert pipeline._same_schedule_day(same_day_later, now, et)
+        assert not pipeline._same_schedule_day(next_day, now, et)
+
+    def test_same_schedule_day_handles_utc_midnight_seam(self):
+        # A 1pm ET game and a 9pm ET game on the *same* Eastern calendar
+        # day land on two different UTC dates (18:00 UTC vs. 02:00 UTC the
+        # next day) -- comparing raw UTC dates would incorrectly read these
+        # as two different slates. Anchoring to ET must call them the same.
+        from zoneinfo import ZoneInfo
+
+        et = ZoneInfo("America/New_York")
+        afternoon_game = datetime(2026, 1, 15, 13, 0, tzinfo=et)
+        primetime_game = datetime(2026, 1, 15, 21, 0, tzinfo=et)
+        assert afternoon_game.astimezone(timezone.utc).date() != primetime_game.astimezone(
+            timezone.utc
+        ).date(), "test setup should actually cross a UTC date boundary"
+        assert pipeline._same_schedule_day(primetime_game, afternoon_game, et)
+
+    def test_events_on_other_days_are_excluded_by_default(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        now = pipeline.utcnow()
+        today = self._event("today", now + timedelta(hours=3))
+        next_week = self._event("next-week", now + timedelta(days=6))
+        result = pipeline.run(self._inputs([today, next_week]), cfg, now=now)
+        skipped_names = {name for name, _ in result.skipped}
+        assert next_week.name in skipped_names
+        assert today.name not in skipped_names
+
+    def test_skip_reason_mentions_the_slate(self, tmp_path):
+        # +30h is comfortably inside the default 96h max_hours_to_start
+        # window but always lands on a different Eastern calendar date --
+        # the max_hours_to_start check must not be what fires first here,
+        # or this is just re-testing that filter instead of same_day_only.
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        now = pipeline.utcnow()
+        tomorrow = self._event("tomorrow", now + timedelta(hours=30))
+        result = pipeline.run(self._inputs([tomorrow]), cfg, now=now)
+        reasons = dict(result.skipped)
+        assert "slate" in reasons[tomorrow.name]
+
+    def test_disabling_same_day_only_falls_back_to_rolling_window(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        cfg.filters.same_day_only = False
+        cfg.filters.max_hours_to_start = 24 * 10  # 10 days, wide enough
+        now = pipeline.utcnow()
+        next_week = self._event("next-week", now + timedelta(days=6))
+        result = pipeline.run(self._inputs([next_week]), cfg, now=now)
+        skipped_names = {name for name, _ in result.skipped}
+        assert next_week.name not in skipped_names
+
+    def test_respects_a_configured_schedule_timezone(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        cfg.filters.schedule_timezone = "America/Los_Angeles"
+        now = pipeline.utcnow()
+        # An event 20 hours out is very likely still "today" Pacific but
+        # could cross an Eastern midnight -- exercising a non-default zone
+        # end-to-end, not just that *some* zone is used.
+        soon = self._event("soon", now + timedelta(hours=2))
+        result = pipeline.run(self._inputs([soon]), cfg, now=now)
+        skipped_names = {name for name, _ in result.skipped}
+        assert soon.name not in skipped_names
+
+
 class TestFullPipeline:
     def test_runs_without_error(self, tmp_path):
         cfg = Config()
