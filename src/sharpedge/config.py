@@ -107,6 +107,23 @@ class SourceConfig:
 
 
 @dataclass
+class GoalConfig:
+    """Daily profit target, in units, with risk cut once it is banked.
+
+    Scoped to the entire bankroll rather than per sport -- one goal, one
+    risk dial, whatever mix of sports produced yesterday's number. See
+    risk/goals.py for the recurrence this drives.
+    """
+
+    enabled: bool = True
+    daily_goal_units: float = 3.0
+    # Floor on how far size gets cut once the goal is fully banked. Kept
+    # well above zero: a fully banked day still bets, just smaller, rather
+    # than stopping outright -- stopping is what stop_loss_drawdown is for.
+    min_risk_multiplier: float = 0.4
+
+
+@dataclass
 class AccountConfig:
     """Books you can actually bet at.
 
@@ -124,6 +141,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     filters: FilterConfig = field(default_factory=FilterConfig)
     sources: SourceConfig = field(default_factory=SourceConfig)
+    goals: GoalConfig = field(default_factory=GoalConfig)
     accounts: AccountConfig = field(default_factory=AccountConfig)
     portfolio: PortfolioConstraints = field(default_factory=PortfolioConstraints)
     data_dir: str = "data"
@@ -214,6 +232,14 @@ provider = "demo"          # "demo" or "theoddsapi"
 sports = ["nfl", "nba", "wnba", "tennis"]
 regions = ["us", "us2", "eu"]
 markets = ["h2h", "spreads", "totals"]
+
+[goals]
+# Daily profit target in units. Once a day's profit clears this, the
+# surplus banks and reduces tomorrow's effective goal, which scales down
+# bet sizing -- see risk/goals.py. A losing day never increases size.
+enabled = true
+daily_goal_units = 3.0
+min_risk_multiplier = 0.4
 
 [accounts]
 # Books you hold funded accounts with. Leave empty to consider all of them.

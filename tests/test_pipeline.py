@@ -288,6 +288,37 @@ class TestLedger:
             ledger.settle(999, BetStatus.WON)
         ledger.close()
 
+    def test_scorecard_counts_wins_and_losses_not_pushes(self, tmp_path):
+        ledger = Ledger(tmp_path / "bets.db")
+        for status in (BetStatus.WON, BetStatus.WON, BetStatus.LOST, BetStatus.PUSHED):
+            bet_id = ledger.record(self._bet(tmp_path))
+            ledger.settle(bet_id, status)
+        card = ledger.scorecard()
+        assert card == {"wins": 2, "losses": 1, "graded": 3, "win_rate": pytest.approx(2 / 3)}
+        ledger.close()
+
+    def test_scorecard_on_empty_ledger(self, tmp_path):
+        ledger = Ledger(tmp_path / "bets.db")
+        assert ledger.scorecard() == {"wins": 0, "losses": 0, "graded": 0, "win_rate": 0.0}
+        ledger.close()
+
+    def test_daily_pnl_units_groups_by_settlement_day(self, tmp_path):
+        ledger = Ledger(tmp_path / "bets.db")
+        bet = self._bet(tmp_path)
+        bet_id = ledger.record(bet)
+        profit = ledger.settle(bet_id, BetStatus.WON)
+        daily = ledger.daily_pnl_units(unit_size=bet.stake)
+        assert len(daily) == 1
+        (day, units), = daily.items()
+        assert units == pytest.approx(profit / bet.stake)
+        ledger.close()
+
+    def test_daily_pnl_units_rejects_nonpositive_unit_size(self, tmp_path):
+        ledger = Ledger(tmp_path / "bets.db")
+        with pytest.raises(ValueError):
+            ledger.daily_pnl_units(unit_size=0.0)
+        ledger.close()
+
 
 class TestCalibration:
     def test_perfectly_calibrated_model_scores_well(self):

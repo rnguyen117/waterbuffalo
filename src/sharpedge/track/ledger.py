@@ -43,6 +43,7 @@ class LedgerEntry:
     profit: float | None
     closing_american: float | None
     rationale: str
+    settled_at: datetime | None = None
 
     @property
     def decimal(self) -> float:
@@ -273,6 +274,45 @@ class Ledger:
             bucket["clv_mean"] = sum(clvs) / len(clvs) if clvs else None
         return out
 
+    def daily_pnl_units(self, unit_size: float) -> dict[str, float]:
+        """Realized profit per calendar day (UTC, by settlement date), in units.
+
+        Bets are grouped by the day they were *graded*, not the day they
+        were placed -- a Sunday bet that settles Monday morning belongs to
+        Monday's number. This is what feeds the goal-tracking recurrence in
+        ``risk.goals``: that recurrence needs one profit figure per settled
+        day, and today's still-pending bets must not appear in it, since
+        they have not happened yet.
+        """
+        if unit_size <= 0:
+            raise ValueError("unit_size must be positive")
+        out: dict[str, float] = {}
+        for row in self.settled():
+            if row.profit is None:
+                continue
+            when = row.settled_at or row.placed_at
+            day = when.astimezone(timezone.utc).date().isoformat()
+            out[day] = out.get(day, 0.0) + row.profit / unit_size
+        return out
+
+    def scorecard(self) -> dict:
+        """Win/loss accuracy -- count, ratio, and percentage.
+
+        Distinct from ``summary()``'s ROI-first view: profit is what
+        matters financially, but "how often is this right" is what a
+        scorecard is asking, and pushes/voids count toward neither side of
+        it.
+        """
+        rows = [r for r in self.settled() if r.status in ("won", "lost")]
+        wins = sum(1 for r in rows if r.status == "won")
+        losses = len(rows) - wins
+        return {
+            "wins": wins,
+            "losses": losses,
+            "graded": len(rows),
+            "win_rate": wins / len(rows) if rows else 0.0,
+        }
+
     def close(self) -> None:
         self.conn.close()
 
@@ -298,6 +338,7 @@ def _to_entry(row: sqlite3.Row) -> LedgerEntry:
         profit=row["profit"],
         closing_american=row["closing_american"],
         rationale=row["rationale"] or "",
+        settled_at=_parse(row["settled_at"]) if row["settled_at"] else None,
     )
 
 

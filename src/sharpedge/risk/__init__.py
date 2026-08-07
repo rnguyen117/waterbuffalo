@@ -1,5 +1,5 @@
-"""Risk: bankroll management and correlation between bets."""
+"""Risk: bankroll management, correlation between bets, and goal tracking."""
 
-from . import bankroll, correlation
+from . import bankroll, correlation, goals
 
-__all__ = ["bankroll", "correlation"]
+__all__ = ["bankroll", "correlation", "goals"]

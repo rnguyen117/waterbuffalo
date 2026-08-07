@@ -66,7 +66,8 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("clv", help="closing line value report")
     sub.add_parser("calibrate", help="check whether the probabilities are honest")
-    sub.add_parser("summary", help="ledger performance summary")
+    p_summary = sub.add_parser("summary", help="ledger performance summary")
+    p_summary.add_argument("--json", help="write the scorecard as JSON to this path")
 
     p_sim = sub.add_parser("simulate", help="simulate a season at a given edge")
     p_sim.add_argument("--edge", type=float, default=0.02)
@@ -154,13 +155,44 @@ def _cmd_card(args, cfg) -> int:
         print(f"error fetching data: {exc}", file=sys.stderr)
         return 1
 
+    unit = cfg.bankroll.effective_unit_size
+    goal_state = None
+    if cfg.goals.enabled:
+        from .risk.goals import state_from_history
+        from .track.ledger import Ledger
+
+        ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+        try:
+            daily_pnl = ledger.daily_pnl_units(unit)
+        finally:
+            ledger.close()
+        goal_state = state_from_history(
+            daily_pnl, cfg.goals.daily_goal_units, cfg.goals.min_risk_multiplier
+        )
+        cfg.bankroll.kelly_multiplier *= goal_state.risk_multiplier
+        if goal_state.risk_multiplier < 0.999:
+            print(
+                f"Goal tracking: {goal_state.banked_surplus:.2f}u banked, "
+                f"sizing at {goal_state.risk_multiplier:.0%} of normal "
+                f"({goal_state.effective_goal:.2f}u still needed today)\n"
+            )
+
     history = LineHistory(Path(cfg.data_dir) / "lines.db")
     try:
         result = pipeline.run(inputs, cfg, history=history)
     finally:
         history.close()
 
-    unit = cfg.bankroll.effective_unit_size
+    if goal_state is not None:
+        result.card_stats = dict(result.card_stats or {})
+        result.card_stats["goal"] = {
+            "daily_goal_units": cfg.goals.daily_goal_units,
+            "banked_surplus_units": round(goal_state.banked_surplus, 4),
+            "effective_goal_units": round(goal_state.effective_goal, 4),
+            "progress_fraction": round(goal_state.progress_fraction, 4),
+            "risk_multiplier": round(goal_state.risk_multiplier, 4),
+        }
+
     print(report.console(result, verbose=args.verbose, unit_size=unit))
 
     if args.json:
@@ -248,27 +280,68 @@ def _cmd_calibrate(args, cfg) -> int:
 
 
 def _cmd_summary(args, cfg) -> int:
+    import json
+
+    from .risk.goals import state_from_history
     from .track.ledger import Ledger
 
+    unit = cfg.bankroll.effective_unit_size
     ledger = Ledger(Path(cfg.data_dir) / "bets.db")
     try:
         s = ledger.summary()
         by_book = ledger.by_dimension("book")
+        scorecard = ledger.scorecard()
+        daily_pnl = ledger.daily_pnl_units(unit)
     finally:
         ledger.close()
+
+    goal_state = None
+    if cfg.goals.enabled and daily_pnl:
+        goal_state = state_from_history(
+            daily_pnl, cfg.goals.daily_goal_units, cfg.goals.min_risk_multiplier
+        )
+
+    if args.json:
+        payload = {
+            "summary": s,
+            "scorecard": scorecard,
+            "by_book": by_book,
+            "daily_pnl_units": daily_pnl,
+            "goal": (
+                {
+                    "daily_goal_units": cfg.goals.daily_goal_units,
+                    "banked_surplus_units": round(goal_state.banked_surplus, 4),
+                    "effective_goal_units": round(goal_state.effective_goal, 4),
+                    "progress_fraction": round(goal_state.progress_fraction, 4),
+                    "risk_multiplier": round(goal_state.risk_multiplier, 4),
+                }
+                if goal_state is not None
+                else None
+            ),
+        }
+        Path(args.json).write_text(json.dumps(payload, indent=2))
+        print(f"wrote scorecard JSON to {args.json}")
 
     if not s["bets"]:
         print("No settled bets yet.")
         return 0
 
+    print(f"Record     {scorecard['wins']}-{scorecard['losses']}  ({scorecard['win_rate']:.1%})")
     print(f"Bets       {s['bets']:,}")
     print(f"Staked     ${s['staked']:,.2f}")
     print(f"Profit     ${s['profit']:,.2f}")
     print(f"ROI        {s['roi']:+.2%}")
-    print(f"Win rate   {s['win_rate']:.1%}")
     print(f"Expected   ${s['expected_profit']:,.2f}   (what the model projected)")
     if s["clv_mean"] is not None:
         print(f"CLV        {s['clv_mean']:+.2%}, beat the close {s['beat_close_rate']:.0%} of the time")
+
+    if goal_state is not None:
+        print(
+            f"\nGoal       {cfg.goals.daily_goal_units:g}u/day  |  "
+            f"{goal_state.banked_surplus:.2f}u banked  |  "
+            f"{goal_state.progress_fraction:.0%} of goal covered  |  "
+            f"next sizing at {goal_state.risk_multiplier:.0%}"
+        )
 
     if by_book:
         print("\nBy book:")
