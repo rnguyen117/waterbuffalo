@@ -106,6 +106,7 @@ edges concentrate elsewhere — and it prices the full menu accordingly:
 | Anytime touchdown | 0.54 | 11.5% | $1,000 |
 | Tackles, steals, blocks | 0.42–0.46 | 9.5–11% | $250–500 |
 | WNBA points / rebounds / assists | 0.44–0.52 | 9.0–9.8% | $500–750 |
+| Tennis aces / double faults | 0.40–0.48 | 10.0–11.5% | $250–400 |
 
 WNBA props are registered under their own `(sport, stat)` key, not folded
 into the NBA's — the two share stat names ("points", "assists") but not a
@@ -113,6 +114,34 @@ profile. A lookup keyed on the stat alone would let whichever sport loads
 last in the registry silently overwrite the other's efficiency and limit
 numbers, which is exactly the kind of bug this system exists to prevent
 elsewhere and very nearly reintroduced here.
+
+### Tennis: a different kind of market entirely
+
+Every other sport here prices a market by recovering an expected margin and
+running it through a distribution — normal, Skellam, gamma. Tennis has no
+margin in that sense: a 6-1 6-2 win and a 7-6 7-6 win are both "the match,"
+and neither maps onto a continuous scale the way point differential does.
+
+What tennis has instead is **serve percentage** — the probability a player
+wins a point on their own serve. `pricing/tennis.py` runs that single number
+through the actual rules of scoring exactly, via recursion rather than a
+memorized formula: point-win-rate → game-hold probability (the closed-form
+deuce result, derived from a geometric series rather than asserted) →
+set-win probability (game-by-game, with a proper 6-6 tiebreak) → match-win
+probability (best-of-three or best-of-five, via exact combinatorics). A
+quoted moneyline inverts back to a serve-rate edge the same way
+`oddsmath.prob_to_spread` recovers an expected margin for a team sport, so a
+news signal ("second serve speed down 8 mph") has somewhere principled to
+land.
+
+Every function is cross-checked against an independent Monte Carlo
+simulation in `tests/test_tennis.py` rather than trusted on the strength of
+a formula transcribed from memory — which caught two real bugs during
+development: unbounded recursion in the win-by-two zone past 6-6 in a
+tiebreak (fixed with a closed-form solution to that renewal process), and a
+6-6 set tiebreak that was accidentally being priced off game-hold
+probabilities (~70%) instead of the underlying point probabilities (~55–65%)
+it needed.
 
 The pattern is the whole strategy. A book defends its NFL side with six
 figures and its best analysts; it posts a tackles prop at a $500 limit with a
@@ -264,6 +293,40 @@ caps on total exposure, per game, per bet, and per book, with a structural
 correlation matrix so four bets on one game are not treated as four independent
 positions.
 
+**Goal-based risk reduction** (`risk/goals.py`) layers a second, slower dial
+on top of that: set a daily profit goal in units. A day that clears it
+*banks* the surplus, which reduces tomorrow's effective goal and scales
+`kelly_multiplier` down for the next card — continuously, not as a step
+function, and floored at `min_risk_multiplier` (0.4 by default) so betting
+never stops outright, which is what `stop_loss_drawdown` is already for.
+
+```
+banked_surplus_t  = max(banked_surplus_{t-1} + (profit_units_{t-1} - goal), 0)
+effective_goal_t  = max(goal - banked_surplus_t, 0)
+progress_fraction = 1 - effective_goal_t / goal
+risk_multiplier   = 1 - progress_fraction * (1 - min_risk_multiplier)
+```
+
+The floor at zero on `banked_surplus` is the load-bearing line: a day that
+misses the goal contributes a negative term that gets clamped away instead
+of carried forward as "debt" that would justify betting bigger to catch up.
+That asymmetry — surplus banks, deficits do not — is what keeps this from
+turning into martingale/revenge-betting with extra steps. The state is
+recomputed from the ledger's full settled history on every run
+(`state_from_history`) rather than saved separately, so the number in front
+of you is always reproducible from the ledger alone.
+
+It applies to the whole bankroll, not per sport: one goal, one risk dial,
+whatever mix of NFL, NBA, WNBA, MLB, and tennis produced yesterday's number.
+Configure it under `[goals]`:
+
+```toml
+[goals]
+enabled = true
+daily_goal_units = 3.0
+min_risk_multiplier = 0.4
+```
+
 ### Tracking
 
 A SQLite ledger of every bet with the reasoning attached, closing line value
@@ -272,6 +335,13 @@ honest and feeds a corrected `market_trust` back into the config.
 
 **Read the CLV line before the profit line.** Over any realistic sample, profit
 is mostly variance and CLV is mostly signal.
+
+`sharp-edge summary` also prints a **scorecard** — win/loss count and win
+rate off graded bets specifically (`Ledger.scorecard()`), which is a
+different question than `summary()`'s ROI-first view — and, when goal
+tracking is enabled, the same goal-progress numbers the next card will size
+against. `sharp-edge summary --json` exports the scorecard, the goal state,
+and daily P&L by settlement day.
 
 ## How it avoids fooling itself
 
@@ -310,7 +380,7 @@ sharp-edge simulate --edge 0.02   # what a season actually looks like
 sharp-edge settle 12 won --closing -130
 sharp-edge clv                    # are you beating the close?
 sharp-edge calibrate              # are your probabilities honest?
-sharp-edge summary                # performance by book, league, market
+sharp-edge summary [--json out.json]   # scorecard, goal progress, performance by book
 ```
 
 **Units** are a display convention, not a different sizing model: every
@@ -334,6 +404,12 @@ along the way 47% of the time. That is what a *winning* approach feels like.
 explorer — open it directly in a browser, no server or build step. It ships
 with an embedded sample card so it works immediately, and it reads a real
 export from `sharp-edge card --json` if you paste or upload one.
+
+Above the card sits a **track record and goal progress** panel, sourced
+from `card_stats.scorecard` and `card_stats.goal` in the JSON export — the
+same win/loss record and goal state `sharp-edge summary` prints, next to
+each bet's event date and time. It hides itself gracefully on an older
+export, or a fresh ledger with nothing settled yet.
 
 Every control on the left recomputes the card live, client-side:
 
@@ -370,8 +446,9 @@ src/sharpedge/
   market/           book registry, consensus, movement, shopping, props,
                     public money, market taxonomy
   signals/          injuries, news, weather, situational, market-derived, props
-  pricing/          expected value, Kelly, portfolio, stat distributions
-  risk/             bankroll management, correlation
+  pricing/          expected value, Kelly, portfolio, stat distributions,
+                    tennis (serve-percentage win probability)
+  risk/             bankroll management, correlation, goal-based sizing
   track/            ledger, closing line value, calibration
   backtest/         Monte Carlo simulation
   sources/          The Odds API, RSS news, demo generator
@@ -389,7 +466,7 @@ that they are carried at near-zero weight.
 pip install pytest && pytest
 ```
 
-328 tests, no network required. They cover the math against known values
+412 tests, no network required. They cover the math against known values
 (-110 is 52.38%, three is the most common NFL margin, Kelly at p=0.6 and even
 money is 0.2), and the behaviors that matter: the screen must find the stale
 lines the demo generator plants, and it must never recommend both sides of a
@@ -414,6 +491,10 @@ must find **nothing**.
 - **Prop limits are small and prop accounts get limited fastest.** Books
   tolerate losing on sides far longer than on props, because prop losses
   identify you immediately.
+- **The tennis model treats sets as independent, given each player's hold
+  rate.** That is the standard simplifying assumption in tennis forecasting
+  (Klaassen & Magnus, Barnett-Clarke), but it ignores momentum and fatigue
+  across sets, which is a real, second-order effect.
 - **This is not financial advice, and it is not a guarantee.** It is a
   disciplined framework for a negative-sum game where the house holds a
   structural advantage. Bet only what you can afford to lose. If gambling stops
