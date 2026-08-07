@@ -121,7 +121,7 @@ class SourceConfig:
     # call in a single run, independent of how many events happen to be in
     # the window; raise it deliberately, not by accident.
     live_props: bool = True
-    live_props_max_events: int = 20
+    live_props_max_events: int = 50
     # Free, no credit cost: ESPN's public site API (unofficial, unversioned
     # -- see sources/live_injuries.py) and the National Weather Service
     # (official, US-only, NFL games only).
@@ -276,7 +276,7 @@ markets = ["h2h", "spreads", "totals"]
 # Player props cost one additional paid API call per event (The Odds API
 # prices them per game, not bulk). live_props_max_events caps that per run.
 live_props = true
-live_props_max_events = 20
+live_props_max_events = 50
 # Free: ESPN's public site API for injuries (unofficial, can change without
 # notice) and the National Weather Service for NFL game-day forecasts.
 live_injuries = true
