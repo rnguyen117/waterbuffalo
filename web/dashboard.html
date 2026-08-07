@@ -525,6 +525,18 @@
     transition: width 0.2s ease;
   }
   .progress-fill.is-full { background: var(--good); }
+  .demo-tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
 
   .section-heading {
     display: flex;
@@ -868,13 +880,13 @@
     <div class="summary-strip" id="summaryStrip"></div>
     <div class="scorecard-panel" id="scorecardPanel" style="display:none;">
       <div class="scorecard-block">
-        <p class="panel-label">Track record</p>
+        <p class="panel-label">Track record <span class="demo-tag" id="scDemoTag" style="display:none;">Fabricated sample</span></p>
         <div class="scorecard-figures">
           <div class="figure"><div class="k">Record</div><div class="v" id="scRecord">&mdash;</div></div>
           <div class="figure"><div class="k">Win rate</div><div class="v accent" id="scWinRate">&mdash;</div></div>
           <div class="figure"><div class="k">Graded</div><div class="v" id="scGraded">&mdash;</div></div>
         </div>
-        <p class="scorecard-hint">Settled bets in the local ledger as of the last <code>sharp-edge card --json</code> export &mdash; updates once a day when the card is regenerated.</p>
+        <p class="scorecard-hint" id="scHint">Settled bets in the local ledger as of the last <code>sharp-edge card --json</code> export &mdash; updates once a day when the card is regenerated.</p>
       </div>
       <div class="scorecard-block">
         <p class="panel-label">Goal progress</p>
@@ -1333,6 +1345,15 @@ const DEMO_CARD = {"generated_at": "2026-08-07T05:33:57.214448+00:00", "bankroll
       $("scWinRate").textContent = "—";
       $("scGraded").textContent = "0";
     }
+
+    // The bundled demo card's "history" is fabricated purely so this panel
+    // has something to show -- it is not a real track record, and saying so
+    // once in the sidebar's general "sample data" note is easy to miss when
+    // looking at this panel specifically. Label it here too, loudly.
+    $("scDemoTag").style.display = state.isDemo ? "inline" : "none";
+    $("scHint").textContent = state.isDemo
+      ? "Fabricated for this demo so the panel has something to show — not a real track record. Paste your own sharp-edge card --json export to see yours."
+      : "Settled bets in the local ledger as of the last sharp-edge card --json export — updates once a day when the card is regenerated.";
 
     const goalBlock = panel.querySelector(".scorecard-block:last-child");
     if (!goal) {
