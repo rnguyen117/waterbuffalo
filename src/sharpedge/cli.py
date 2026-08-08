@@ -8,6 +8,9 @@
     sharp-edge simulate             what a day or a season looks like
     sharp-edge devig -110 -110      inspect a market's true prices
     sharp-edge kelly ...            size a single bet
+    sharp-edge settle ID won        grade a bet in the ledger
+    sharp-edge refresh-stats out.json   re-sync an export's scorecard/goal
+                                     from the ledger, no live pull
 """
 
 from __future__ import annotations
@@ -109,6 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     p_settle.add_argument("result", choices=["won", "lost", "pushed", "voided"])
     p_settle.add_argument("--closing", type=float, help="closing American odds, for CLV")
 
+    p_refresh = sub.add_parser(
+        "refresh-stats",
+        help="update an exported card's scorecard/goal from the current ledger, no live pull",
+    )
+    p_refresh.add_argument("path", help="a card JSON file previously written by `card --json`")
+
     args = parser.parse_args(argv)
 
     try:
@@ -128,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         "kelly": _cmd_kelly,
         "ladder": _cmd_ladder,
         "settle": _cmd_settle,
+        "refresh-stats": _cmd_refresh_stats,
     }
     return handlers[args.command](args, cfg)
 
@@ -551,6 +561,61 @@ def _cmd_settle(args, cfg) -> int:
         ledger.close()
 
     print(f"bet {args.bet_id} settled {args.result}: {profit:+,.2f}")
+    return 0
+
+
+def _cmd_refresh_stats(args, cfg) -> int:
+    """Re-attach scorecard/goal to an already-exported card, from the ledger only.
+
+    A card export goes stale the moment a bet in it gets settled -- the
+    scorecard and goal numbers embedded at export time were only ever a
+    snapshot. Re-running `card` would fix that too, but it also re-pulls
+    live odds, which costs real API quota just to refresh two numbers that
+    live entirely in the local ledger. This reads the ledger, nothing else,
+    and writes the result back into the same file in place.
+    """
+    import json
+
+    from .risk.goals import state_from_history
+    from .track.ledger import Ledger
+
+    path = Path(args.path)
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"error reading {path}: {exc}", file=sys.stderr)
+        return 1
+
+    unit = data.get("unit_size") or cfg.bankroll.effective_unit_size
+
+    ledger = Ledger(Path(cfg.data_dir) / "bets.db")
+    try:
+        scorecard = ledger.scorecard()
+        daily_pnl = ledger.daily_pnl_units(unit)
+    finally:
+        ledger.close()
+
+    card_stats = dict(data.get("card_stats") or {})
+    card_stats["scorecard"] = scorecard
+
+    if cfg.goals.enabled:
+        goal_state = state_from_history(
+            daily_pnl, cfg.goals.daily_goal_units, cfg.goals.min_risk_multiplier
+        )
+        card_stats["goal"] = {
+            "daily_goal_units": cfg.goals.daily_goal_units,
+            "banked_surplus_units": round(goal_state.banked_surplus, 4),
+            "effective_goal_units": round(goal_state.effective_goal, 4),
+            "progress_fraction": round(goal_state.progress_fraction, 4),
+            "risk_multiplier": round(goal_state.risk_multiplier, 4),
+        }
+
+    data["card_stats"] = card_stats
+    path.write_text(json.dumps(data))
+
+    print(f"refreshed {path}: record {scorecard['wins']}-{scorecard['losses']} ({scorecard['win_rate']:.1%})")
+    if cfg.goals.enabled:
+        print(f"goal: {card_stats['goal']['progress_fraction']:.0%} of {cfg.goals.daily_goal_units:.1f}u banked")
     return 0
 
 

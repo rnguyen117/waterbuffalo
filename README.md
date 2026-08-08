@@ -494,7 +494,17 @@ sharp-edge settle 12 won --closing -130
 sharp-edge clv                    # are you beating the close?
 sharp-edge calibrate              # are your probabilities honest?
 sharp-edge summary [--json out.json]   # scorecard, goal progress, performance by book
+sharp-edge refresh-stats card.json     # re-sync a card export's scorecard/goal from
+                                        # the ledger after settling bets -- no live pull
 ```
+
+An exported card's `card_stats.scorecard` and `card_stats.goal` are a
+snapshot from whenever `card --json` ran, not something that updates itself
+as bets settle later. `refresh-stats` re-reads the local ledger and rewrites
+just those two fields in place, so the [dashboard](#dashboard)'s Track
+Record and Goal Progress panels reflect real settled results the next time
+you reload that export -- without spending API quota to re-pull odds just
+to refresh two numbers that live entirely in the ledger.
 
 **Units** are a display convention, not a different sizing model: every
 stake is still a fractional-Kelly dollar amount against the current

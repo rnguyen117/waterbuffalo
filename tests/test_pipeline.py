@@ -170,10 +170,11 @@ class TestSameDayFilter:
         cfg = Config()
         cfg.data_dir = str(tmp_path)
         cfg.filters.schedule_timezone = "America/Los_Angeles"
-        now = pipeline.utcnow()
-        # An event 20 hours out is very likely still "today" Pacific but
-        # could cross an Eastern midnight -- exercising a non-default zone
-        # end-to-end, not just that *some* zone is used.
+        # Fixed, not pipeline.utcnow(): noon Pacific is nowhere near a
+        # midnight seam in any zone, so a +2h offset can't flakily cross
+        # into the next Pacific calendar day depending on when the test
+        # suite happens to run (it did, right around 10pm Pacific).
+        now = datetime(2026, 1, 15, 20, 0, tzinfo=timezone.utc)  # noon PST
         soon = self._event("soon", now + timedelta(hours=2))
         result = pipeline.run(self._inputs([soon]), cfg, now=now)
         skipped_names = {name for name, _ in result.skipped}

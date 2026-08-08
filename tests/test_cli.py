@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from sharpedge.cli import _cmd_card, _scale_exposure
+from sharpedge.cli import _cmd_card, _cmd_refresh_stats, _scale_exposure
 from sharpedge.config import Config
 from sharpedge.models import BetStatus
 from sharpedge.track.ledger import Ledger
@@ -186,3 +186,93 @@ class TestGoalRiskReduction:
 
         assert ahead["card_stats"]["goal"]["risk_multiplier"] < 0.999
         assert ahead["total_stake"] < baseline["total_stake"]
+
+
+class TestRefreshStats:
+    """`sharp-edge refresh-stats` -- re-sync an exported card's scorecard/goal
+    from the ledger without a live pull.
+
+    Exists because a card export goes stale the moment a bet in it settles:
+    the numbers embedded at export time were only ever a snapshot, and
+    nothing re-syncs them automatically just because a bet got graded later.
+    """
+
+    def _seed_one_settled_bet(self, data_dir, status):
+        ledger = Ledger(data_dir / "bets.db")
+        now = datetime.now(timezone.utc)
+
+        class FakeEvent:
+            event_id = "g-1"
+            name = "Some Game"
+            league = "MLB"
+            start_time = now - timedelta(hours=3)
+
+        class FakeFair:
+            probability = 0.6
+
+        class FakeBet:
+            event = FakeEvent()
+            market_type = type("M", (), {"value": "total"})()
+            outcome = "Over"
+            line = 8.5
+            book = "fanduel"
+            american = -110
+            stake = 100.0
+            fair = FakeFair()
+            model_probability = 0.6
+            confidence = type("C", (), {"value": "B"})()
+            ev = 0.05
+            signals = []
+
+        bet_id = ledger.record(FakeBet(), placed_at=now - timedelta(hours=4))
+        ledger.settle(bet_id, status)
+        ledger.close()
+
+    def test_refreshes_scorecard_from_the_ledger(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        card_path = tmp_path / "card.json"
+        card_path.write_text(json.dumps({
+            "unit_size": 100.0,
+            "card_stats": {"scorecard": {"wins": 0, "losses": 0, "graded": 0, "win_rate": 0.0}},
+        }))
+
+        self._seed_one_settled_bet(tmp_path, BetStatus.WON)
+
+        args = argparse.Namespace(path=str(card_path))
+        rc = _cmd_refresh_stats(args, cfg)
+        assert rc == 0
+
+        refreshed = json.loads(card_path.read_text())
+        sc = refreshed["card_stats"]["scorecard"]
+        assert sc["wins"] == 1
+        assert sc["losses"] == 0
+        assert sc["graded"] == 1
+
+    def test_does_not_touch_the_bets_list(self, tmp_path):
+        # This is a stats-only resync -- it must not rewrite the card's
+        # actual recommendations, only card_stats.
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        card_path = tmp_path / "card.json"
+        original_bets = [{"event": "Team A @ Team B", "stake": 50.0}]
+        card_path.write_text(json.dumps({
+            "unit_size": 100.0,
+            "bets": original_bets,
+            "card_stats": {"scorecard": {"wins": 0, "losses": 0, "graded": 0, "win_rate": 0.0}},
+        }))
+
+        self._seed_one_settled_bet(tmp_path, BetStatus.LOST)
+
+        args = argparse.Namespace(path=str(card_path))
+        _cmd_refresh_stats(args, cfg)
+
+        refreshed = json.loads(card_path.read_text())
+        assert refreshed["bets"] == original_bets
+
+    def test_missing_file_errors_cleanly(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        args = argparse.Namespace(path=str(tmp_path / "does-not-exist.json"))
+        rc = _cmd_refresh_stats(args, cfg)
+        assert rc == 1
