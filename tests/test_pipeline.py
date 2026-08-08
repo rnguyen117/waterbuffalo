@@ -321,6 +321,50 @@ class TestFullPipeline:
             assert bet.confidence != Confidence.PASS
 
 
+class TestNearMisses:
+    """Priced outcomes that missed the EV floor but were close.
+
+    Exists to answer "there's not enough plays" without loosening min_ev/
+    min_books/max_hold behind the user's back -- these are surfaced
+    separately, explicitly not staked, so a thin card is visibly thin
+    rather than silently padded.
+    """
+
+    def test_demo_card_produces_near_misses(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        result = pipeline.run(inputs, cfg)
+        assert result.near_misses, "demo slate should have at least one close-but-no candidate"
+        for nm in result.near_misses:
+            assert nm.ev < nm.min_ev, "a near miss must not have actually cleared the floor"
+            assert 0.0 < nm.shortfall <= pipeline.NEAR_MISS_EV_BAND
+
+    def test_near_misses_sorted_closest_first(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        result = pipeline.run(inputs, cfg)
+        shortfalls = [nm.shortfall for nm in result.near_misses]
+        assert shortfalls == sorted(shortfalls)
+
+    def test_near_misses_capped(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        result = pipeline.run(inputs, cfg)
+        assert len(result.near_misses) <= 20
+
+    def test_screen_then_stake_carries_near_misses(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        inputs = pipeline.fetch_inputs(cfg)
+        now = pipeline.utcnow()
+        via_run = pipeline.run(inputs, cfg, now=now)
+        screened = pipeline.screen(inputs, cfg, now=now)
+        via_split = pipeline.stake(screened, cfg, now=now)
+        assert len(via_run.near_misses) == len(via_split.near_misses) == len(screened.near_misses)
+
 class TestReporting:
     def test_console_renders(self, tmp_path):
         cfg = Config()
@@ -351,6 +395,53 @@ class TestReporting:
         cfg.data_dir = str(tmp_path)
         result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
         assert "Daily Card" in report.markdown(result)
+
+    def test_near_misses_render_in_console_and_are_labeled_as_not_bets(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
+        assert result.near_misses
+        text = report.console(result)
+        assert "NEAR THE FLOOR" in text
+        assert "not bets" in text
+
+    def test_near_misses_render_on_an_empty_card_too(self, tmp_path):
+        # The near-miss list is exactly most useful on a thin night --
+        # make sure the "No bets today" branch doesn't drop it.
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        cfg.filters.min_ev = 0.99
+        result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
+        assert not result.bets
+        text = report.console(result)
+        assert "No bets today" in text
+        # A 99% floor is high enough that nothing lands within the near-miss
+        # band either -- this just confirms the branch doesn't crash when
+        # near_misses is also empty, not that it always has content.
+        assert "NEAR THE FLOOR" not in text or "Closest misses" in text
+
+    def test_near_misses_in_json_export(self, tmp_path):
+        import json
+
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
+        payload = json.loads(report.to_json(result))
+        assert len(payload["near_misses"]) == len(result.near_misses)
+        if payload["near_misses"]:
+            nm = payload["near_misses"][0]
+            assert nm["ev"] < nm["min_ev"]
+            assert set(nm) >= {
+                "event", "league", "sport", "market", "outcome", "book",
+                "american", "ev", "min_ev", "shortfall",
+            }
+
+    def test_near_misses_render_in_markdown(self, tmp_path):
+        cfg = Config()
+        cfg.data_dir = str(tmp_path)
+        result = pipeline.run(pipeline.fetch_inputs(cfg), cfg)
+        assert result.near_misses
+        assert "Near the floor" in report.markdown(result)
 
 
 class TestLedger:

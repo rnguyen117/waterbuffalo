@@ -358,6 +358,31 @@ Arbitrage, middles, low-hold pairs, odds boosts, free-bet conversion, and
 correlated parlay pricing. These are arithmetic on posted prices and are true
 regardless of who wins.
 
+### Near the floor
+
+A card with zero (or two, or three) bets is not the screen hiding
+information -- but "nothing cleared the bar" and "the closest thing missed
+by half a point" are different situations for a bettor deciding whether to
+check back later, and previously the pipeline collapsed both into the same
+silent, uncounted rejection.
+
+Every outcome that gets fully priced and screened but falls short of
+`min_ev` (per-market, since props and sides carry different floors) is
+checked against a second, narrower band: within 1.5 EV points of the floor
+(`pipeline.NEAR_MISS_EV_BAND`) and still non-negative by point estimate.
+Anything in that band is kept as a `NearMiss` -- event, market, book, EV,
+and exactly how far short it fell -- instead of being discarded like an
+ordinary rejection. These show up in `card --json`'s `near_misses` array,
+the console/Markdown reports under "Near the floor," and the [web
+dashboard](#dashboard)'s own near-miss panel, deliberately styled dashed
+and muted rather than the vivid green used for real opportunities.
+
+**This is not a lever that finds more bets.** Nothing here is staked, and
+nothing here changes what clears the screen -- it exists so a thin night is
+visibly thin (and shows exactly how close the rest came) rather than
+opaque, which was the honest alternative to quietly loosening `min_ev`,
+`min_books`, or `max_hold` to manufacture volume.
+
 ### Staking and risk
 
 Fractional Kelly (quarter by default), shrinkage toward the market scaled by
@@ -533,6 +558,12 @@ from `card_stats.scorecard` and `card_stats.goal` in the JSON export — the
 same win/loss record and goal state `sharp-edge summary` prints, next to
 each bet's event date and time. It hides itself gracefully on an older
 export, or a fresh ledger with nothing settled yet.
+
+Below structural opportunities sits a **near the floor** panel, sourced
+from the export's `near_misses` array — see [Near the floor](#near-the-floor)
+above. Deliberately styled dashed and muted, not the green used for real
+opportunities, and labeled "not bets" in its own copy, so a thin card
+still shows what almost made it without it reading as a recommendation.
 
 Every control on the left recomputes the card live, client-side:
 

@@ -587,6 +587,41 @@ class Opportunity:
 
 
 @dataclass
+class NearMiss:
+    """A priced outcome that fell just short of the EV floor.
+
+    Not a recommendation -- it never passed the bar that turns a priced
+    outcome into a bet, and it is never staked. It exists because "no bets
+    today" and "the closest thing missed the floor by 0.3 points" are
+    different situations for a bettor deciding whether to keep checking
+    back, and the screen otherwise throws this distinction away: a
+    candidate that misses ``min_ev`` by a hair and one that misses it by
+    ten points both just vanish as an uncounted rejection.
+    """
+
+    event: str
+    league: str
+    sport: str
+    market: str
+    subject: str | None
+    stat: str | None
+    outcome: str
+    line: float | None
+    book: str
+    american: float
+    ev: float
+    min_ev: float
+    model_probability: float
+    market_probability: float
+    books_priced: int
+
+    @property
+    def shortfall(self) -> float:
+        """How far below the floor this fell, in EV points. Always > 0."""
+        return self.min_ev - self.ev
+
+
+@dataclass
 class SlateResult:
     """Everything the daily run produced."""
 
@@ -599,6 +634,10 @@ class SlateResult:
     # Ranked view of the card, carrying each bet's scoring components.
     ranked: list[Any] = field(default_factory=list)   # ranking.ScoredBet
     card_stats: dict[str, Any] = field(default_factory=dict)
+    # Priced outcomes that missed the EV floor but were close -- see
+    # NearMiss's docstring for why these are worth keeping separately from
+    # an ordinary uncounted rejection.
+    near_misses: list[NearMiss] = field(default_factory=list)
 
     @property
     def total_stake(self) -> float:

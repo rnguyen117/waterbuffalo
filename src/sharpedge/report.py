@@ -23,6 +23,13 @@ TIER_LABEL = {
 }
 
 
+def _near_miss_desc(nm) -> str:
+    subject = f"{nm.subject} " if nm.subject else ""
+    stat = f"{nm.stat.replace('_', ' ')} " if nm.stat else ""
+    line = f" {nm.line:g}" if nm.line is not None else ""
+    return f"{subject}{stat}{nm.outcome}{line} ({nm.american:+.0f})"
+
+
 def console(result: SlateResult, verbose: bool = False, unit_size: float | None = None) -> str:
     """Human-readable card for a terminal.
 
@@ -51,6 +58,15 @@ def console(result: SlateResult, verbose: bool = False, unit_size: float | None 
         add("  This is a normal and frequent outcome. Nothing in the slate cleared")
         add("  the expected-value floor once uncertainty and vig were accounted for.")
         add("  Forcing a bet on a day like this is how edges get given back.")
+        if result.near_misses:
+            add("")
+            add("  Closest misses (not bets -- none of these cleared the floor):")
+            for nm in result.near_misses[:8]:
+                add(
+                    f"    - {nm.event} [{nm.league}] {_near_miss_desc(nm)}: "
+                    f"{nm.ev:+.2%} EV, {nm.shortfall:.2%} short of the "
+                    f"{nm.min_ev:.2%} floor"
+                )
         if result.skipped and verbose:
             add("")
             add("  Skipped:")
@@ -142,6 +158,18 @@ def console(result: SlateResult, verbose: bool = False, unit_size: float | None 
             add(f"     {opp.description}")
             add(f"     {opp.profit_pct:+.2%}  -  {opp.note}")
 
+    if result.near_misses:
+        add("")
+        add("-" * 78)
+        add("  NEAR THE FLOOR  (not bets -- none of these cleared the EV floor)")
+        add("-" * 78)
+        for nm in result.near_misses[:8]:
+            add(f"  {nm.event} [{nm.league}]  {_near_miss_desc(nm)}")
+            add(
+                f"     {nm.ev:+.2%} EV @ {nm.book}  -  {nm.shortfall:.2%} short "
+                f"of the {nm.min_ev:.2%} floor"
+            )
+
     if result.ranked:
         from .ranking import probability_of_winning_at_least
 
@@ -191,6 +219,17 @@ def markdown(result: SlateResult, unit_size: float | None = None) -> str:
             "Nothing cleared the expected-value floor after uncertainty and vig. "
             "This happens often and is the system working as intended."
         )
+        if result.near_misses:
+            add("")
+            add("### Closest misses")
+            add("")
+            add("Not bets -- none of these cleared the floor.")
+            add("")
+            for nm in result.near_misses[:10]:
+                add(
+                    f"- {nm.event} [{nm.league}] {_near_miss_desc(nm)} @ {nm.book}: "
+                    f"{nm.ev:+.2%} EV, {nm.shortfall:.2%} short of the {nm.min_ev:.2%} floor"
+                )
         return "\n".join(lines)
 
     add(
@@ -230,6 +269,18 @@ def markdown(result: SlateResult, unit_size: float | None = None) -> str:
         add("")
         for opp in result.opportunities[:10]:
             add(f"- **{opp.kind}** {opp.event.name}: {opp.description} ({opp.profit_pct:+.2%}) - {opp.note}")
+
+    if result.near_misses:
+        add("")
+        add("## Near the floor")
+        add("")
+        add("Not bets -- none of these cleared the EV floor.")
+        add("")
+        for nm in result.near_misses[:10]:
+            add(
+                f"- {nm.event} [{nm.league}] {_near_miss_desc(nm)} @ {nm.book}: "
+                f"{nm.ev:+.2%} EV, {nm.shortfall:.2%} short of the {nm.min_ev:.2%} floor"
+            )
 
     return "\n".join(lines)
 
@@ -307,6 +358,27 @@ def to_json(result: SlateResult, unit_size: float | None = None) -> str:
                 "note": o.note,
             }
             for o in result.opportunities
+        ],
+        "near_misses": [
+            {
+                "event": nm.event,
+                "league": nm.league,
+                "sport": nm.sport,
+                "market": nm.market,
+                "subject": nm.subject,
+                "stat": nm.stat,
+                "outcome": nm.outcome,
+                "line": nm.line,
+                "book": nm.book,
+                "american": nm.american,
+                "ev": round(nm.ev, 5),
+                "min_ev": round(nm.min_ev, 5),
+                "shortfall": round(nm.shortfall, 5),
+                "model_probability": round(nm.model_probability, 5),
+                "market_probability": round(nm.market_probability, 5),
+                "books_priced": nm.books_priced,
+            }
+            for nm in result.near_misses
         ],
         "skipped": [{"what": w, "why": r} for w, r in result.skipped],
     }

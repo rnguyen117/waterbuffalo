@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import copy
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -41,6 +41,7 @@ from .models import (
     InjuryReport,
     Market,
     MarketType,
+    NearMiss,
     NewsItem,
     Opportunity,
     PublicBetting,
@@ -179,6 +180,15 @@ class ScreenResult:
     opportunities: list[Opportunity]
     skipped: list[tuple[str, str]]
     considered: int
+    near_misses: list[NearMiss] = field(default_factory=list)
+
+
+# A candidate within this many EV points of the floor, but still short of
+# it, is worth showing as "close" rather than discarding as an ordinary
+# rejection. 1.5 points is deliberately tight -- wide enough to catch a bet
+# that would clear the bar on a half-point line move, not so wide that it
+# fills up with things nowhere near being playable.
+NEAR_MISS_EV_BAND = 0.015
 
 
 def screen(
@@ -196,6 +206,7 @@ def screen(
     candidates: list[BetCandidate] = []
     opportunities: list[Opportunity] = []
     skipped: list[tuple[str, str]] = []
+    near_misses: list[NearMiss] = []
     considered = 0
 
     public_index = {
@@ -239,12 +250,13 @@ def screen(
             # by rung from a fitted distribution, never pooled into one
             # consensus.
             if market.market_type.is_prop:
-                prop_bets, prop_skips = _prop_candidates(
+                prop_bets, prop_skips, prop_near_misses = _prop_candidates(
                     event, market, config, engine, now,
                     event_injuries, event_news, weather, considered,
                 )
                 candidates.extend(prop_bets)
                 skipped.extend(prop_skips)
+                near_misses.extend(prop_near_misses)
                 continue
 
             fair = consensus.fair_prices(
@@ -379,6 +391,7 @@ def screen(
                     movement_notes=read.notes,
                     min_ev=min_ev,
                     profile=profile,
+                    near_misses=near_misses,
                 )
                 if candidate is not None:
                     candidates.append(candidate)
@@ -406,6 +419,7 @@ def screen(
         opportunities=opportunities,
         skipped=skipped,
         considered=considered,
+        near_misses=sorted(near_misses, key=lambda n: n.shortfall)[:20],
     )
 
 
@@ -457,6 +471,7 @@ def stake(
         skipped=screened.skipped,
         ranked=screened.ranked,
         card_stats=stats,
+        near_misses=screened.near_misses,
     )
 
 
@@ -488,6 +503,7 @@ def _build_candidate(
     movement_notes: list[str],
     min_ev: float = 0.01,
     profile=None,
+    near_misses: list[NearMiss] | None = None,
 ) -> BetCandidate | None:
     """Price, screen, and provisionally size one bet."""
     book = get_book(best.book)
@@ -527,6 +543,30 @@ def _build_candidate(
     )
 
     if assessment.ev < min_ev:
+        if (
+            near_misses is not None
+            and 0.0 <= assessment.ev
+            and assessment.ev >= min_ev - NEAR_MISS_EV_BAND
+        ):
+            near_misses.append(
+                NearMiss(
+                    event=event.name,
+                    league=event.league,
+                    sport=event.sport,
+                    market=market.market_type.value,
+                    subject=None,
+                    stat=None,
+                    outcome=outcome,
+                    line=best.line,
+                    book=best.book,
+                    american=best.american,
+                    ev=assessment.ev,
+                    min_ev=min_ev,
+                    model_probability=assessment.probability,
+                    market_probability=fair.probability,
+                    books_priced=fair.n_books,
+                )
+            )
         return None
     if assessment.ev_lower < config.filters.min_ev_lower:
         return None
@@ -621,7 +661,7 @@ def _prop_candidates(
     news: list,
     weather,
     considered: int,
-) -> tuple[list[BetCandidate], list[tuple[str, str]]]:
+) -> tuple[list[BetCandidate], list[tuple[str, str]], list[NearMiss]]:
     """Price a player prop market rung by rung.
 
     Props cannot go through the generic consensus path, and the reason is
@@ -639,7 +679,7 @@ def _prop_candidates(
     """
     prop = props_module.market_to_prop(market, event.sport)
     if prop is None:
-        return [], []
+        return [], [], []
 
     profile = profile_for(market.market_type, market.stat, sport=event.sport)
     playable, reason = props_module.is_playable(
@@ -648,7 +688,7 @@ def _prop_candidates(
         min_books=max(3, config.filters.min_books),
     )
     if not playable:
-        return [], [(f"{prop.player} {prop.stat}", reason)]
+        return [], [(f"{prop.player} {prop.stat}", reason)], []
 
     # Fit across every book and every rung, not to one anchor. A single-point
     # fit is fragile: a small error in recovering that one probability
@@ -662,7 +702,7 @@ def _prop_candidates(
     )
     anchor_line = prop.anchor_line
     if consensus_fit is None or anchor_line is None:
-        return [], [(f"{prop.player} {prop.stat}", "not enough quotes to fit a ladder")]
+        return [], [(f"{prop.player} {prop.stat}", "not enough quotes to fit a ladder")], []
 
     dist, sigma, n_books = consensus_fit
     integer = model_for(prop.stat).integer
@@ -670,6 +710,7 @@ def _prop_candidates(
     min_ev = max(config.filters.min_ev, profile.min_edge_required)
     hold = props_module.prop_hold(prop)
     skips: list[tuple[str, str]] = []
+    near_misses: list[NearMiss] = []
     n_sharp = sum(
         1 for q in prop.quotes_at(anchor_line) if get_book(q.book).is_sharp
     )
@@ -743,6 +784,26 @@ def _prop_candidates(
                 ),
             )
             if assessment.ev < min_ev:
+                if 0.0 <= assessment.ev and assessment.ev >= min_ev - NEAR_MISS_EV_BAND:
+                    near_misses.append(
+                        NearMiss(
+                            event=event.name,
+                            league=event.league,
+                            sport=event.sport,
+                            market=market.market_type.value,
+                            subject=prop.player,
+                            stat=prop.stat,
+                            outcome=side,
+                            line=quote.line,
+                            book=quote.book,
+                            american=offered,
+                            ev=assessment.ev,
+                            min_ev=min_ev,
+                            model_probability=assessment.probability,
+                            market_probability=fair_p,
+                            books_priced=n_books,
+                        )
+                    )
                 continue
             if assessment.ev_lower < config.filters.min_ev_lower:
                 continue
@@ -813,7 +874,7 @@ def _prop_candidates(
             candidate.notes = notes
             candidates.append(candidate)
 
-    return candidates, skips
+    return candidates, skips, near_misses
 
 
 def _ladder_notes(event: Event, market: Market, config: Config) -> dict:
